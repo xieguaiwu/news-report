@@ -23,7 +23,7 @@ type Item struct {
 // ── RSS 2.0 ───────────────────────────────────────────────────
 
 type rssFeed struct {
-	XMLName xml.Name  `xml:"rss"`
+	XMLName xml.Name   `xml:"rss"`
 	Channel rssChannel `xml:"channel"`
 }
 type rssChannel struct {
@@ -45,13 +45,13 @@ type atomFeed struct {
 	Entries []atomItem `xml:"entry"`
 }
 type atomItem struct {
-	Title     string    `xml:"title"`
+	Title     string     `xml:"title"`
 	Links     []atomLink `xml:"link"`
-	ID        string    `xml:"id"`
-	Published string    `xml:"published"`
-	Updated   string    `xml:"updated"`
-	Summary   string    `xml:"summary"`
-	Content   string    `xml:"content"`
+	ID        string     `xml:"id"`
+	Published string     `xml:"published"`
+	Updated   string     `xml:"updated"`
+	Summary   string     `xml:"summary"`
+	Content   string     `xml:"content"`
 }
 type atomLink struct {
 	Href string `xml:"href,attr"`

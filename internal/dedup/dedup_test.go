@@ -18,9 +18,9 @@ func TestNormalizeTitle(t *testing.T) {
 
 func TestIsDuplicate(t *testing.T) {
 	cases := []struct {
-		a, b    string
-		aL, bL  string
-		want    bool
+		a, b   string
+		aL, bL string
+		want   bool
 	}{
 		{"EU leaders agree on new sanctions package", "EU leaders agree on new sanctions package", "en", "en", true},
 		{"EU leaders agree on new sanctions package", "EU Leaders Agree On New Sanctions Package!", "en", "en", true},

@@ -24,30 +24,30 @@ import (
 
 // Item 是报告中的一条新闻。
 type Item struct {
-	Title     string
-	URL       string
-	Summary   string
-	Body      string // 可选：全文（--fulltext 时填充）
-	SourceID  string
+	Title      string
+	URL        string
+	Summary    string
+	Body       string // 可选：全文（--fulltext 时填充）
+	SourceID   string
 	SourceName string
-	Lang      string
-	Tier      string
-	Category  classify.Category
-	Score     float64
-	Published time.Time
-	AgeLabel  string
+	Lang       string
+	Tier       string
+	Category   classify.Category
+	Score      float64
+	Published  time.Time
+	AgeLabel   string
 }
 
 // SourceStat 是单来源抓取结果统计。
 type SourceStat struct {
-	ID      string
-	Name    string
-	Lang    string
-	Tier    string
-	Feeds   []string
-	OK      bool
-	Items   int
-	Err     string
+	ID         string
+	Name       string
+	Lang       string
+	Tier       string
+	Feeds      []string
+	OK         bool
+	Items      int
+	Err        string
 	UsedScrape bool
 }
 
@@ -65,10 +65,10 @@ type Report struct {
 
 // Options 控制单次运行。
 type Options struct {
-	Languages  []string // 空 = 全部
-	Categories []string // 空 = 全部
-	SourceIDs  []string // 空 = 全部
-	Window     time.Duration // 0 = 不限
+	Languages   []string      // 空 = 全部
+	Categories  []string      // 空 = 全部
+	SourceIDs   []string      // 空 = 全部
+	Window      time.Duration // 0 = 不限
 	LimitPerCat int
 	TotalLimit  int
 	StrictFocus bool
@@ -135,9 +135,9 @@ func Run(ctx context.Context, cfg *config.Config, fetcher *fetch.Fetcher, opts O
 
 	// 4. 分类
 	type scored struct {
-		it   feed.Item
-		cat  classify.Category
-		kw   int
+		it  feed.Item
+		cat classify.Category
+		kw  int
 	}
 	scoredItems := make([]scored, 0, len(all))
 	for _, it := range all {

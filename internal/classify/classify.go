@@ -358,8 +358,8 @@ func Classify(lang, title, summary string) Result {
 	best := Other
 	bestScore := 0
 	for _, c := range []struct {
-		cat  Category
-		sc   int
+		cat Category
+		sc  int
 	}{
 		{Politics, pol}, {Economy, eco}, {Industry, ind},
 	} {

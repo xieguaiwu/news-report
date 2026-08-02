@@ -27,26 +27,26 @@ type SourceOverride struct {
 
 // Config 是完整运行配置。yaml.v3 反序列化时只覆盖文件中出现的字段。
 type Config struct {
-	Languages   []string                   `yaml:"languages"`    // en / de / fr
-	Categories  []string                   `yaml:"categories"`   // politics / economy / industry
-	Minutes     int                        `yaml:"minutes"`      // 新鲜度窗口（分钟），0 = 不限窗口
-	LimitPerCat int                        `yaml:"limit_per_category"`
-	TotalLimit  int                        `yaml:"total_limit"`
-	Concurrency int                        `yaml:"concurrency"`
-	TimeoutSec  int                        `yaml:"timeout_seconds"`
-	Retries     int                        `yaml:"retries"`
-	HalflifeH   float64                    `yaml:"halflife_hours"` // 新鲜度衰减半衰期
-	Proxy       string                     `yaml:"proxy"`         // 留空 = 使用环境变量代理
-	UserAgent   string                     `yaml:"user_agent"`
-	CacheDir    string                     `yaml:"cache_dir"`
-	StoreDays   int                        `yaml:"store_days"` // 已读记录保留天数
-	ShowSeen    bool                       `yaml:"show_seen"`  // true = 重复显示已报告过的条目
-	StrictFocus bool                       `yaml:"strict_focus"`
-	GoogleNews  bool                       `yaml:"google_news"` // 额外广度来源（谷歌新闻聚合）
-	Fulltext    int                        `yaml:"fulltext"`   // 每个分类抓取全文的条数（0 = 不抓）
-	FulltextMax int                        `yaml:"fulltext_max_chars"`
-	ReportTitle string                     `yaml:"report_title"`
-	Sources     map[string]SourceOverride  `yaml:"sources"`
+	Languages   []string                  `yaml:"languages"`  // en / de / fr
+	Categories  []string                  `yaml:"categories"` // politics / economy / industry
+	Minutes     int                       `yaml:"minutes"`    // 新鲜度窗口（分钟），0 = 不限窗口
+	LimitPerCat int                       `yaml:"limit_per_category"`
+	TotalLimit  int                       `yaml:"total_limit"`
+	Concurrency int                       `yaml:"concurrency"`
+	TimeoutSec  int                       `yaml:"timeout_seconds"`
+	Retries     int                       `yaml:"retries"`
+	HalflifeH   float64                   `yaml:"halflife_hours"` // 新鲜度衰减半衰期
+	Proxy       string                    `yaml:"proxy"`          // 留空 = 使用环境变量代理
+	UserAgent   string                    `yaml:"user_agent"`
+	CacheDir    string                    `yaml:"cache_dir"`
+	StoreDays   int                       `yaml:"store_days"` // 已读记录保留天数
+	ShowSeen    bool                      `yaml:"show_seen"`  // true = 重复显示已报告过的条目
+	StrictFocus bool                      `yaml:"strict_focus"`
+	GoogleNews  bool                      `yaml:"google_news"` // 额外广度来源（谷歌新闻聚合）
+	Fulltext    int                       `yaml:"fulltext"`    // 每个分类抓取全文的条数（0 = 不抓）
+	FulltextMax int                       `yaml:"fulltext_max_chars"`
+	ReportTitle string                    `yaml:"report_title"`
+	Sources     map[string]SourceOverride `yaml:"sources"`
 }
 
 // Default 返回内置默认配置。所有字段均有合理值，保证开箱即用。

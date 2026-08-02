@@ -19,17 +19,17 @@ func testServers(t *testing.T) (*httptest.Server, *httptest.Server) {
 	t.Helper()
 	feedA := `<?xml version="1.0"?><rss version="2.0"><channel>
 <item><title>EU approves new sanctions package</title><link>https://a.example/1</link><pubDate>` +
-		time.Now().Add(-2 * time.Hour).Format(time.RFC1123Z) + `</pubDate></item>
+		time.Now().Add(-2*time.Hour).Format(time.RFC1123Z) + `</pubDate></item>
 <item><title>Central bank raises interest rates</title><link>https://a.example/2</link><pubDate>` +
-		time.Now().Add(-3 * time.Hour).Format(time.RFC1123Z) + `</pubDate></item>
+		time.Now().Add(-3*time.Hour).Format(time.RFC1123Z) + `</pubDate></item>
 <item><title>EU approves new sanctions package</title><link>https://a.example/1-dup</link><pubDate>` +
-		time.Now().Add(-2 * time.Hour).Format(time.RFC1123Z) + `</pubDate></item>
+		time.Now().Add(-2*time.Hour).Format(time.RFC1123Z) + `</pubDate></item>
 </channel></rss>`
 	feedB := `<?xml version="1.0"?><rss version="2.0"><channel>
 <item><title>Football team wins championship</title><link>https://b.example/sport</link><pubDate>` +
-		time.Now().Add(-1 * time.Hour).Format(time.RFC1123Z) + `</pubDate></item>
+		time.Now().Add(-1*time.Hour).Format(time.RFC1123Z) + `</pubDate></item>
 <item><title>Semiconductor fab expansion announced</title><link>https://b.example/chips</link><pubDate>` +
-		time.Now().Add(-4 * time.Hour).Format(time.RFC1123Z) + `</pubDate></item>
+		time.Now().Add(-4*time.Hour).Format(time.RFC1123Z) + `</pubDate></item>
 </channel></rss>`
 	s1 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, feedA)

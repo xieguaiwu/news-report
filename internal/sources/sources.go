@@ -40,10 +40,10 @@ type Source struct {
 
 // Scrape 描述无 feed 时的 HTML 兜底抓取规则。
 type Scrape struct {
-	URL          string `json:"url"`
-	Selector     string `json:"selector,omitempty"` // goquery 选择器；空 = 启发式
-	LinkPattern  string `json:"link_pattern,omitempty"`
-	MaxItems     int    `json:"max_items,omitempty"`
+	URL         string `json:"url"`
+	Selector    string `json:"selector,omitempty"` // goquery 选择器；空 = 启发式
+	LinkPattern string `json:"link_pattern,omitempty"`
+	MaxItems    int    `json:"max_items,omitempty"`
 }
 
 // weight 返回来源权重（按层级）。
@@ -121,7 +121,7 @@ func Defaults() []Source {
 			// 2026 起 RSS 已下线（302→首页），依赖 scrape 兑底
 			ID: "brookings", Name: "Brookings Institution", Lang: "en", Tier: TierSpecialist,
 			Weight: weightFor(TierSpecialist), Optional: true, Enabled: true,
-			Feeds:  []string{"https://www.brookings.edu/feed/"},
+			Feeds: []string{"https://www.brookings.edu/feed/"},
 			Scrape: &Scrape{URL: "https://www.brookings.edu/", MaxItems: 20,
 				LinkPattern: `^https://www\.brookings\.edu/(articles|research|commentary|podcast-episode)/`},
 		},
