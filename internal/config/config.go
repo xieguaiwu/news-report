@@ -175,5 +175,8 @@ func (c *Config) Validate() error {
 	if c.HalflifeH <= 0 {
 		return errors.New("halflife_hours 必须 > 0")
 	}
+	if c.LimitPerCat < 0 || c.TotalLimit < 0 {
+		return errors.New("limit_per_category / total_limit 不能为负数")
+	}
 	return nil
 }

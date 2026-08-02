@@ -146,7 +146,7 @@ func parseAtom(data []byte) ([]Item, error) {
 				}
 			}
 		}
-		if link == "" {
+		if link == "" && strings.HasPrefix(it.ID, "http") {
 			link = it.ID
 		}
 		if link == "" || strings.TrimSpace(it.Title) == "" {
@@ -220,30 +220,63 @@ var timeLayouts = []string{
 	"Mon Jan 2 15:04:05 2006",
 }
 
-// 未知时区缩写（如 CEST）→ 去掉后按 UTC 处理。
-var tzAbbrevRe = regexp.MustCompile(`\s+[A-Z]{2,5}$`)
+// 未知时区缩写 → 偏移映射（Go 的 time 包只识别少量缩写，其余按此表纠正）。
+// 只收录无歧义常见缩写；歧义的（如 IST）不收录。
+var tzOffsets = map[string]int{
+	"CET": 1 * 3600, "CEST": 2 * 3600,
+	"BST": 1 * 3600,
+	"EET": 2 * 3600, "EEST": 3 * 3600,
+	"MSK": 3 * 3600,
+	"GST": 4 * 3600,
+	"PKT": 5 * 3600,
+	"WIB": 7 * 3600, "SGT": 8 * 3600, "HKT": 8 * 3600, "CST-CHINA": 8 * 3600,
+	"JST": 9 * 3600, "KST": 9 * 3600,
+	"AEST": 10 * 3600, "AEDT": 11 * 3600,
+	"EST": -5 * 3600, "EDT": -4 * 3600,
+	"CST": -6 * 3600, "CDT": -5 * 3600,
+	"MST": -7 * 3600, "MDT": -6 * 3600,
+	"PST": -8 * 3600, "PDT": -7 * 3600,
+	"AKST": -9 * 3600, "AKDT": -8 * 3600,
+	"HST": -10 * 3600,
+}
+
+var tzAbbrevRe = regexp.MustCompile(`\s+([A-Z]{2,5})$`)
+
+// 无时区的布局（配合 ParseInLocation 使用）
+var noZoneLayouts = []string{
+	"Mon, 02 Jan 2006 15:04:05",
+	"Mon, 2 Jan 2006 15:04:05",
+	"02 Jan 2006 15:04:05",
+	"2 Jan 2006 15:04:05",
+	"2006-01-02T15:04:05",
+	"2006-01-02 15:04:05",
+	"2006/01/02 15:04:05",
+	"Mon Jan 2 15:04:05 2006",
+	"2006-01-02",
+}
 
 // parseTime 尝试多种布局解析时间；全部失败返回零值。
+// 顺序：已知缩写映射（纠正 Go 把未知缩写当 UTC 的偏差）→ 通用布局 → 失败。
 func parseTime(s string) time.Time {
 	s = strings.TrimSpace(s)
 	if s == "" {
 		return time.Time{}
 	}
+	// 已知时区缩写（如 CEST=+2）：先查表，避免 Go 以偏移 0 解析
+	if m := tzAbbrevRe.FindStringSubmatch(s); m != nil {
+		if off, ok := tzOffsets[m[1]]; ok {
+			noTZ := tzAbbrevRe.ReplaceAllString(s, "")
+			zone := time.FixedZone(m[1], off)
+			for _, layout := range noZoneLayouts {
+				if t, err := time.ParseInLocation(layout, noTZ, zone); err == nil {
+					return t
+				}
+			}
+		}
+	}
 	for _, layout := range timeLayouts {
 		if t, err := time.Parse(layout, s); err == nil {
 			return t
-		}
-	}
-	// 去掉未知时区缩写再试
-	if tzAbbrevRe.MatchString(s) {
-		noTZ := tzAbbrevRe.ReplaceAllString(s, "")
-		for _, layout := range timeLayouts {
-			if !strings.Contains(layout, "MST") && !strings.Contains(layout, "Z07") {
-				continue
-			}
-			if t, err := time.Parse(layout, noTZ+" UTC"); err == nil {
-				return t
-			}
 		}
 	}
 	return time.Time{}

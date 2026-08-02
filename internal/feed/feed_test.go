@@ -121,7 +121,9 @@ func TestParseDateVariants(t *testing.T) {
 		{"2006-01-02T15:04:05Z", time.Date(2006, 1, 2, 15, 4, 5, 0, time.UTC)},
 		{"2006-01-02 15:04:05", time.Date(2006, 1, 2, 15, 4, 5, 0, time.UTC)},
 		{"2006-01-02", time.Date(2006, 1, 2, 0, 0, 0, 0, time.UTC)},
-		{"Tue, 01 Aug 2026 09:00:00 CEST", time.Date(2026, 8, 1, 9, 0, 0, 0, time.UTC)}, // 未知缩写 → UTC
+		{"Tue, 01 Aug 2026 09:00:00 CEST", time.Date(2026, 8, 1, 7, 0, 0, 0, time.UTC)},  // CEST=UTC+2 → 07:00 UTC
+		{"Fri, 31 Jul 2026 18:00:00 JST", time.Date(2026, 7, 31, 9, 0, 0, 0, time.UTC)},  // JST=UTC+9
+		{"Mon, 01 Aug 2026 12:00:00 WEST", time.Date(2026, 8, 1, 12, 0, 0, 0, time.UTC)}, // 未收录缩写 → 按 UTC
 		{"", time.Time{}},
 		{"not a date", time.Time{}},
 	}

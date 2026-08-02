@@ -230,7 +230,7 @@ func runRead(args []string) {
 		fatalMsg("用法: news-report read <url> [--lang en|de|fr] [--max-chars N]")
 	}
 	url := fs.Arg(0)
-	if !strings.HasPrefix(url, "http") {
+	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
 		fatalMsg("URL 必须以 http(s):// 开头")
 	}
 	cfg, err := config.Load(*cfgPath)
@@ -336,6 +336,8 @@ func runSources(args []string) {
 			}
 			targets = append(targets, s)
 		}
+		// 契约：每个 goroutine 恰好向 results 发送一次（成功或失败），
+		// 接收循环按 len(targets) 计数——若未来改为逐 feed 发送必须同步修改。
 		results := make(chan result, len(targets))
 		for _, s := range targets {
 			go func(s sources.Source) {
@@ -421,6 +423,9 @@ func split(s string) []string {
 }
 
 func trunc(s string, n int) string {
+	if n <= 0 {
+		return s
+	}
 	if len(s) <= n {
 		return s
 	}

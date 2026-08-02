@@ -177,14 +177,17 @@ func TestTimeout(t *testing.T) {
 }
 
 func TestIsRetriable(t *testing.T) {
-	if !IsRetriable(fmt.Errorf("HTTP 503 Service Unavailable")) {
+	if !IsRetriable(&StatusError{Code: 503, Status: "Service Unavailable"}) {
 		t.Error("503 应可重试")
 	}
-	if IsRetriable(fmt.Errorf("HTTP 404 Not Found")) {
+	if IsRetriable(&StatusError{Code: 404, Status: "Not Found"}) {
 		t.Error("404 不应重试")
 	}
 	if !IsRetriable(fmt.Errorf("dial tcp: connection refused")) {
 		t.Error("网络错误应可重试")
+	}
+	if IsRetriable(nil) {
+		t.Error("nil 不应可重试")
 	}
 	if !strings.Contains(LangHeader("de"), "de-DE") {
 		t.Error("LangHeader 应包含 de-DE")

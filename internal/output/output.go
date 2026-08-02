@@ -90,7 +90,11 @@ func Terminal(w io.Writer, r *report.Report, color bool) {
 			continue
 		}
 		if s.Err != "" {
-			fmt.Fprintf(w, "%s✗ %s%s %s: %s\n", cRed, cReset, s.ID, s.Err, "")
+			if color {
+				fmt.Fprintf(w, "%s✗ %s%s %s: %s\n", cRed, cReset, s.ID, s.Err, "")
+			} else {
+				fmt.Fprintf(w, "✗ %s %s: %s\n", s.ID, s.Err, "")
+			}
 		}
 	}
 }
@@ -173,10 +177,14 @@ func cResetIf(color bool, c string) string {
 }
 
 func truncate(s string, n int) string {
-	if len(s) <= n {
+	if n <= 0 {
 		return s
 	}
-	return s[:n] + "…"
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+	return string(r[:n]) + "…"
 }
 
 func version() string { return "0.1.0" }

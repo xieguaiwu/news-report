@@ -5,6 +5,7 @@ package report
 import (
 	"context"
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -218,7 +219,9 @@ func Run(ctx context.Context, cfg *config.Config, fetcher *fetch.Fetcher, opts O
 	if err == nil {
 		pruned := seen.Prune(cfg.StoreDays)
 		if pruned > 0 {
-			_ = seen.Save()
+			if err := seen.Save(); err != nil {
+				fmt.Fprintf(os.Stderr, "警告: 无法保存已读记录: %v\n", err)
+			}
 		}
 		kept := uniq[:0]
 		for _, it := range uniq {
@@ -233,7 +236,9 @@ func Run(ctx context.Context, cfg *config.Config, fetcher *fetch.Fetcher, opts O
 		for _, it := range uniq {
 			seen.Add(it.URL)
 		}
-		_ = seen.Save()
+		if err := seen.Save(); err != nil {
+			fmt.Fprintf(os.Stderr, "警告: 无法保存已读记录: %v\n", err)
+		}
 	}
 
 	// 9. 排序：分类内按分数降序
@@ -249,14 +254,14 @@ func Run(ctx context.Context, cfg *config.Config, fetcher *fetch.Fetcher, opts O
 		return uniq[i].Score > uniq[j].Score
 	})
 
-	// 10. 数量限制
+	// 10. 数量限制（0 = 不限制）
 	perCat := map[classify.Category]int{}
 	var final []Item
 	for _, it := range uniq {
-		if len(final) >= opts.TotalLimit {
+		if opts.TotalLimit > 0 && len(final) >= opts.TotalLimit {
 			break
 		}
-		if perCat[it.Category] >= opts.LimitPerCat {
+		if opts.LimitPerCat > 0 && perCat[it.Category] >= opts.LimitPerCat {
 			continue
 		}
 		final = append(final, it)
@@ -297,8 +302,8 @@ func (r *Report) FetchFulltext(ctx context.Context, f *fetch.Fetcher, n, maxChar
 				return // 尽力而为
 			}
 			body := strings.TrimSpace(art.Text)
-			if maxChars > 0 && len(body) > maxChars {
-				body = body[:maxChars] + "…"
+			if maxChars > 0 && len([]rune(body)) > maxChars {
+				body = truncateRunes(body, maxChars)
 			}
 			it.Body = body
 		}(it)
@@ -413,6 +418,15 @@ func collectSource(ctx context.Context, f *fetch.Fetcher, s sources.Source, retr
 		stat.Err = lastErr
 	}
 	return items, stat
+}
+
+// truncateRunes 按 rune（字符）截断，避免切断多字节 UTF-8（德语 ß/ü、法语 é 等）。
+func truncateRunes(s string, n int) string {
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+	return string(r[:n]) + "…"
 }
 
 // sourceWeight 查表来源权重（未知来源给默认 0.8）。

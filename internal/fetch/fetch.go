@@ -34,7 +34,8 @@ type Fetcher struct {
 	opts   Options
 
 	mu     sync.Mutex
-	robots map[string]*robotsRule // host -> 规则（含全部 UA 分组）
+	robots map[string]*robotsRule   // host -> 规则（含全部 UA 分组）
+	busy   map[string]chan struct{} // host -> 抓取中的完成信号（防重复抓取）
 }
 
 type robotsRule struct {
@@ -67,6 +68,7 @@ func New(opts Options) *Fetcher {
 		client: &http.Client{Transport: transport, Timeout: opts.Timeout},
 		opts:   opts,
 		robots: map[string]*robotsRule{},
+		busy:   map[string]chan struct{}{},
 	}
 }
 
@@ -135,6 +137,16 @@ func (f *Fetcher) Do(req *http.Request) (*http.Response, error) {
 	return f.client.Do(req)
 }
 
+// StatusError 是带 HTTP 状态码的错误，供重试决策使用（避免字符串匹配）。
+type StatusError struct {
+	Code   int
+	Status string
+}
+
+func (e *StatusError) Error() string {
+	return fmt.Sprintf("HTTP %d: %s", e.Code, e.Status)
+}
+
 func (f *Fetcher) tryOnce(ctx context.Context, u *url.URL, ua string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
 	if err != nil {
@@ -150,13 +162,9 @@ func (f *Fetcher) tryOnce(ctx context.Context, u *url.URL, ua string) ([]byte, e
 		return nil, err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode >= 500 {
-		io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
-		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)
-	}
 	if resp.StatusCode >= 400 {
 		io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
-		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)
+		return nil, &StatusError{Code: resp.StatusCode, Status: resp.Status}
 	}
 	data, err := io.ReadAll(io.LimitReader(resp.Body, maxBody))
 	if err != nil {
@@ -173,25 +181,53 @@ func (f *Fetcher) tryOnce(ctx context.Context, u *url.URL, ua string) ([]byte, e
 var robotsCacheTTL = 24 * time.Hour
 
 // allowed 返回 (是否允许, 是否可判定)。robots.txt 获取失败视为允许（对只读抓取更宽容）。
+// 同一 host 的 robots.txt 在同一时刻只抓取一次，其余并发请求等待结果。
 func (f *Fetcher) allowed(u *url.URL, ua string) (bool, bool) {
 	host := strings.ToLower(u.Host)
-	f.mu.Lock()
-	rule, ok := f.robots[host]
-	known := ok && rule != nil
-	f.mu.Unlock()
+	for {
+		f.mu.Lock()
+		rule, ok := f.robots[host]
+		busyCh, inFlight := f.busy[host]
+		f.mu.Unlock()
 
-	if known && time.Since(rule.fetched) < robotsCacheTTL {
+		if ok && rule != nil && time.Since(rule.fetched) < robotsCacheTTL {
+			return f.checkRule(rule, u, ua)
+		}
+		if inFlight {
+			<-busyCh // 等待抓取完成
+			continue
+		}
+		// 抢占抓取权（双检）
+		f.mu.Lock()
+		rule, ok = f.robots[host]
+		busyCh, inFlight = f.busy[host]
+		if inFlight {
+			f.mu.Unlock()
+			<-busyCh
+			continue
+		}
+		if ok && rule != nil && time.Since(rule.fetched) < robotsCacheTTL {
+			f.mu.Unlock()
+			continue
+		}
+		ch := make(chan struct{})
+		f.busy[host] = ch
+		f.mu.Unlock()
+
+		rule = f.fetchRobots(host, u.Scheme)
+		f.mu.Lock()
+		delete(f.busy, host)
+		if rule == nil {
+			delete(f.robots, host) // 抓取失败 → 下次重试
+			f.mu.Unlock()
+			close(ch)
+			return true, false // 无法判定 → 允许
+		}
+		f.robots[host] = rule
+		f.mu.Unlock()
+		close(ch)
 		return f.checkRule(rule, u, ua)
 	}
-
-	rule = f.fetchRobots(host, u.Scheme)
-	f.mu.Lock()
-	f.robots[host] = rule
-	f.mu.Unlock()
-	if rule == nil {
-		return true, false // 无法判定 → 允许
-	}
-	return f.checkRule(rule, u, ua)
 }
 
 // checkRule 按 UA 分组匹配 robots 规则（精确 UA 优先，其次 *）。
@@ -314,13 +350,22 @@ func IsRetriable(err error) bool {
 	if err == nil {
 		return false
 	}
+	// 显式 HTTP 状态：仅 5xx 可重试
+	var se *StatusError
+	if errors.As(err, &se) {
+		return se.Code >= 500
+	}
+	// 网络层错误（连接/超时/EOF）可重试；4xx 走 StatusError 分支不会到这里
 	var uerr *url.Error
 	if errors.As(err, &uerr) {
 		return true
 	}
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, io.ErrUnexpectedEOF) {
+		return true
+	}
 	msg := err.Error()
-	return strings.Contains(msg, "HTTP 5") || strings.Contains(msg, "timeout") ||
-		strings.Contains(msg, "connection") || strings.Contains(msg, "EOF")
+	return strings.Contains(msg, "timeout") || strings.Contains(msg, "connection") ||
+		strings.Contains(msg, "EOF") || strings.Contains(msg, "reset")
 }
 
 // ResolveURL 把相对地址解析为绝对地址。

@@ -27,7 +27,7 @@ var defaultMaxItems = 25
 // junkRe 过滤明显非新闻链接。
 var junkRe = regexp.MustCompile(`(?i)(^javascript:|mailto:|tel:|#|/login|/signup|/subscribe|/newsletter|/search\?|/tag/|/category/|/author/|/about|/contact|/privacy|/terms|/jobs|/advertise|/rss|/feed$|/wp-|/topics/|/experts/|/events/|/people/|/programs/|\.pdf$|\.jpg|\.png)`)
 
-// Extract 从 HTML 中提取新闻条目列表。
+// Extract 从 HTML 中提取新闻条目列表。无结果时返回空切片（非 nil）。
 func Extract(html, ruleURL string, r Rule) ([]feed.Item, error) {
 	if r.MaxItems <= 0 {
 		r.MaxItems = defaultMaxItems
@@ -82,7 +82,7 @@ func Extract(html, ruleURL string, r Rule) ([]feed.Item, error) {
 	})
 
 	if len(items) == 0 {
-		return nil, nil
+		return []feed.Item{}, nil
 	}
 	return items, nil
 }
