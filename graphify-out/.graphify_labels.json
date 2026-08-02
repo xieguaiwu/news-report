@@ -1,6 +1,6 @@
 {
   "0": "Fetcher",
-  "1": "main.go",
+  "1": "Config",
   "2": "Parse",
   "3": "Run",
   "4": "Extract",
@@ -21,5 +21,7 @@
   "19": "Google News RSS 搜索接口调研报告（find 转载功能）",
   "20": "验证结果",
   "21": "Task for librarian",
-  "22": "Task for librarian"
+  "22": "Task for librarian",
+  "23": "Momus Code Review — news-report v0.2.0",
+  "24": "Task for momus"
 }

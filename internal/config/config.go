@@ -15,7 +15,7 @@ import (
 const (
 	DefaultConfigPath = "~/.config/news-report/config.yaml"
 	DefaultCacheDir   = "~/.cache/news-report"
-	Version           = "0.1.0"
+	Version           = "0.2.0"
 )
 
 // SourceOverride 允许用户针对单个来源做覆盖（不需要删掉整个内置注册表）。
