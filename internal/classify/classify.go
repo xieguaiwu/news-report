@@ -1,0 +1,413 @@
+// Package classify 实现基于关键词的新闻分类：politics（国际政策）/ economy（经济金融）/ industry（产业发展）。
+// 支持 en / de / fr 三种语言，词表按语言独立；带负面词表过滤娱乐/体育等噪音。
+package classify
+
+import (
+	"strings"
+	"unicode"
+)
+
+// init 预规范化全部词表（去重音），与 tokenize 的 normalize 保持一致。
+func init() {
+	for lang, ks := range sets {
+		ks.politics = normList(ks.politics)
+		ks.economy = normList(ks.economy)
+		ks.industry = normList(ks.industry)
+		ks.negative = normList(ks.negative)
+		ks.multiPolitics = normList(ks.multiPolitics)
+		ks.multiEconomy = normList(ks.multiEconomy)
+		ks.multiIndustry = normList(ks.multiIndustry)
+		ks.multiNegative = normList(ks.multiNegative)
+		sets[lang] = ks
+	}
+}
+
+func normList(list []string) []string {
+	out := make([]string, len(list))
+	for i, s := range list {
+		out[i] = normalize(s)
+	}
+	return out
+}
+
+// Category 新闻分类。
+type Category string
+
+const (
+	Politics Category = "politics"
+	Economy  Category = "economy"
+	Industry Category = "industry"
+	Other    Category = "other"
+)
+
+// All 是全部专注分类（用于 CLI 校验与默认过滤）。
+var All = []Category{Politics, Economy, Industry}
+
+// keywordSet 一组分类词表。
+type keywordSet struct {
+	politics []string // 单 token
+	economy  []string
+	industry []string
+	negative []string
+	// 多词短语（直接对原文做子串匹配）
+	multiPolitics []string
+	multiEconomy  []string
+	multiIndustry []string
+	multiNegative []string
+}
+
+var sets = map[string]keywordSet{
+	"en": {
+		politics: []string{
+			"policy", "policies", "government", "parliament", "election", "elections",
+			"summit", "sanctions", "sanction", "diplomacy", "diplomatic", "minister",
+			"ministry", "nato", "eu", "unitednations", "treaty", "tariff", "tariffs",
+			"geopolitical", "geopolitics", "president", "prime", "chancellor",
+			"congress", "senate", "lawmaker", "lawmakers", "legislation", "bill",
+			"foreign", "ambassador", "referendum", "coalition", "cabinet",
+			"europeancommission", "bilateral", "multilateral", "embargo",
+			"defense", "defence", "military", "ceasefire", "peace", "negotiation",
+			"negotiations", "g7", "g20", "apec", "who", "imf", "worldbank",
+			"unsecuritycouncil", "refugee", "asylum", "migration", "border",
+			"war", "conflict", "airstrike", "airstrikes", "invasion", "missile",
+			"missiles", "shelling", "disarmament", "protests", "protest", "strikes",
+		},
+		economy: []string{
+			"economy", "economic", "gdp", "inflation", "interestrate", "centralbank",
+			"fed", "federalreserve", "ecb", "bankofengland", "monetary", "fiscal",
+			"deficit", "debt", "recession", "growth", "unemployment", "labor",
+			"labour", "market", "markets", "stock", "stocks", "bond", "bonds",
+			"currency", "exchange", "trade", "exports", "imports", "bank",
+			"banks", "banking", "treasury", "yield", "yields", "investment",
+			"investor", "investors", "financial", "finance", "budget", "tax",
+			"taxes", "taxation", "stimulus", "subsidy", "subsidies", "austerity",
+			"housing", "mortgage", "forecast", "outlook", "recovery", "slowdown",
+		},
+		industry: []string{
+			"industry", "industrial", "manufacturing", "manufacturer", "factory",
+			"semiconductor", "semiconductors", "chip", "chips", "supplychain",
+			"energy", "oil", "gas", "electricity", "renewable", "solar", "wind",
+			"nuclear", "electricvehicle", "evs", "automotive", "automaker",
+			"automakers", "steel", "aluminum", "aluminium", "battery", "batteries",
+			"lithium", "rareearth", "pharma", "pharmaceutical", "biotech",
+			"aerospace", "defenseindustry", "shipbuilding", "chemical",
+			"chemicals", "infrastructure", "supply", "suppliers", "exportcontrols",
+			"artificialintelligence", "ai", "data", "technology", "tech",
+			"telecom", "5g", "greenenergy", "decarbonization", "carbon",
+			"hydrogen", "mining", "commodities", "commodity", "production",
+			"output", "capacity", "supply", "shortage", "tariff",
+		},
+		negative: []string{
+			"sport", "football", "soccer", "tennis", "basketball", "cricket",
+			"olympics", "worldcup", "celebrity", "entertainment", "hollywood",
+			"movie", "movies", "film", "music", "concert", "fashion", "wedding",
+			"recipe", "weather", "forecast", "horoscope", "puzzle", "quiz",
+			"gossip", "royal", "baby", "pets", "cooking", "travel",
+		},
+		multiPolitics: []string{
+			"prime minister", "foreign policy", "foreign minister", "defense minister",
+			"defence minister", "secretary of state", "security council",
+			"trade war", "trade deal", "peace talks", "cold war", "soft power",
+			"government shutdown", "executive order", "election campaign",
+			"voting", "ballot", "diplomatic relations", "political crisis",
+		},
+		multiEconomy: []string{
+			"central bank", "interest rate", "interest rates", "gross domestic product",
+			"consumer prices", "inflation rate", "economic growth", "fiscal policy",
+			"monetary policy", "quantitative easing", "balance of trade",
+			"trade deficit", "trade surplus", "stock market", "stock markets",
+			"wall street", "bond market", "sovereign debt", "government debt",
+			"public debt", "budget deficit", "gdp growth", "jobless claims",
+			"labor market", "labour market", "housing market", "real estate",
+		},
+		multiIndustry: []string{
+			"supply chain", "supply chains", "electric vehicle", "electric vehicles",
+			"rare earth", "rare earths", "export controls", "industrial policy",
+			"artificial intelligence", "energy transition", "clean energy",
+			"renewable energy", "fossil fuels", "natural gas", "crude oil",
+			"oil prices", "carbon emissions", "green technology", "chips act",
+			"semiconductor industry", "smart manufacturing", "industrial production",
+			"factory output", "capacity utilization",
+		},
+		multiNegative: []string{
+			"sports news", "game results", "movie review", "music review",
+			"celebrity news", "tv ratings", "football match", "weather forecast",
+		},
+	},
+	"de": {
+		politics: []string{
+			"politik", "regierung", "parlament", "wahl", "wahlen", "gipfel",
+			"sanktionen", "sanktion", "diplomatie", "diplomatisch", "minister",
+			"ministerium", "nato", "eu", "un", "vertrag", "verträge", "zoll",
+			"zölle", "geopolitik", "geopolitisch", "präsident", "kanzler",
+			"kanzlerin", "bundestag", "abgeordnete", "gesetz", "gesetze",
+			"koalition", "kabinett", "außenminister", "außenpolitik",
+			"botschafter", "volksentscheid", "referendum", "sicherheitsrat",
+			"verteidigung", "militär", "waffenruhe", "frieden", "verhandlung",
+			"verhandlungen", "g7", "g20", "welthandelsorganisation",
+			"flüchtlinge", "asyl", "migration", "grenze", "europäischekommission",
+			"krieg", "konflikt", "angriff", "angriffe", "offensive", "raketen",
+			"luftangriff", "waffen", "abrüstung", "protest", "proteste",
+		},
+		economy: []string{
+			"wirtschaft", "wirtschaftlich", "bip", "inflation", "zinsen",
+			"zins", "zentralbank", "notenbank", "ezb", "geldpolitik", "fiskal",
+			"defizit", "schulden", "rezession", "wachstum", "arbeitslosigkeit",
+			"arbeitsmarkt", "markt", "märkte", "aktien", "anleihen", "devisen",
+			"handel", "export", "exporte", "import", "importe", "bank", "banken",
+			"treasury", "rendite", "renditen", "investition", "investor",
+			"investoren", "finanz", "finanzen", "haushalt", "steuer", "steuern",
+			"konjunktur", "prognose", "erholung", "abschwächung", "staatsschulden",
+		},
+		industry: []string{
+			"industrie", "industriell", "produktion", "herstellung", "fabrik",
+			"halbleiter", "chip", "chips", "lieferkette", "lieferketten", "energie",
+			"öl", "gas", "strom", "erneuerbare", "solar", "wind", "atomkraft",
+			"elektroauto", "elektroautos", "automobil", "autohersteller", "stahl",
+			"aluminium", "batterie", "batterien", "lithium", "selteneerden",
+			"pharma", "biotech", "luftfahrt", "raumschiff", "schiffbau", "chemie",
+			"infrastruktur", "zulieferer", "exportkontrollen", "künstlicheintelligenz",
+			"technologie", "technik", "telekommunikation", "5g", "grüneenergie",
+			"dekarbonisierung", "kohlenstoff", "wasserstoff", "bergbau", "rohstoffe",
+			"produktionskapazität", "kapazität", "engpass", "verknappung", "krise",
+		},
+		negative: []string{
+			"sport", "fußball", "tennis", "basketball", "olympia", "weltmeisterschaft",
+			"prominente", "unterhaltung", "film", "kino", "musik", "konzert",
+			"mode", "hochzeit", "rezept", "wetter", "wettervorhersage", "horoskop",
+			"rätsel", "quiz", "klatsch", "royals", "baby", "haustiere",
+		},
+		multiPolitics: []string{
+			"außenministerium", "innere sicherheit", "sicherheitspolitik",
+			"handelskrieg", "handelsabkommen", "friedensgespräche", "europäische union",
+			"vereinte nationen", "sicherheitsrat", "geplante gesetzesänderung",
+			"regierungskrise", "koalitionsverhandlungen",
+		},
+		multiEconomy: []string{
+			"europäische zentralbank", "leitzins", "leitzinsen", "bruttoinlandsprodukt",
+			"verbraucherpreise", "inflationstate", "wirtschaftswachstum",
+			"fiskalpolitik", "geldpolitik", "quantitative lockerung", "handelsbilanz",
+			"haushaltsdefizit", "aktienmarkt", "börse", "anleihemarkt",
+			"staatsverschuldung", "arbeitslosenquote", "konjunkturprognose",
+			"währungspolitik", "währungskurs", "währungsreserven", "währungsunion",
+		},
+		multiIndustry: []string{
+			"lieferkette", "elektrofahrzeug", "elektrofahrzeuge", "seltene erden",
+			"exportkontrollen", "industriepolitik", "künstliche intelligenz",
+			"energiewende", "erneuerbare energien", "fossile brennstoffe",
+			"erdgas", "rohöl", "ölpreise", "co2-emissionen", "grüne technologien",
+			"halbleiterindustrie", "industrieproduktion", "produktionsausfälle",
+		},
+		multiNegative: []string{
+			"sportnachrichten", "spielergebnisse", "filmkritik", "musikkritik",
+			"prominenten-news", "tv-quoten", "wettervorhersage",
+		},
+	},
+	"fr": {
+		politics: []string{
+			"politique", "politiques", "gouvernement", "parlement", "élection",
+			"élections", "election", "sommets", "sommet", "sanctions", "sanction",
+			"diplomatie", "diplomatique", "ministre", "ministère", "otan", "ue",
+			"onu", "traité", "tarifs", "douaniers", "géopolitique", "président",
+			"premier", "chancelier", "assemblée", "sénat", "député", "députés",
+			"loi", "lois", "étranger", "ambassadeur", "référendum", "coalition",
+			"cabinet", "gouvernemental", "g7", "g20", "conseildesécurité",
+			"défense", "militaire", "cessez-le-feu", "paix", "négociation",
+			"négociations", "migration", "frontière", "asile", "réfugiés",
+			"guerre", "conflit", "bombardement", "bombardements", "frappe",
+			"frappes", "offensive", "trêve", "armes", "missiles",
+			"manifestation", "protestation",
+		},
+		economy: []string{
+			"économie", "economie", "économique", "pib", "inflation", "taux",
+			"banquecentrale", "bce", "politiquemonetaire", "budgetaire",
+			"déficit", "dette", "récession", "croissance", "chômage", "emploi",
+			"marché", "marchés", "bourse", "actions", "obligations", "devise",
+			"commerce", "exportations", "importations", "banque", "banques",
+			"trésor", "rendement", "investissement", "investisseurs", "finance",
+			"finances", "budget", "impôt", "impôts", "fiscalité", "relance",
+			"prévision", "reprise", "ralentissement",
+		},
+		industry: []string{
+			"industrie", "industriel", "fabrication", "manufacture", "usine",
+			"semiconducteurs", "semi-conducteurs", "puce", "puces", "chaîned'approvisionnement",
+			"énergie", "energie", "pétrole", "gaz", "électricité", "renouvelable",
+			"solaire", "éolien", "nucléaire", "voitureélectrique", "véhiculesélectriques",
+			"automobile", "constructeurs", "acier", "aluminium", "batterie",
+			"batteries", "lithium", "terresrares", "pharma", "pharmaceutique",
+			"biotech", "aérospatial", "chantiernaval", "chimie", "infrastructure",
+			"fournisseurs", "contrôlesàl'exportation", "intelligenceartificielle",
+			"technologie", "tech", "télécom", "5g", "énergieverte", "décarbonation",
+			"carbone", "hydrogène", "mines", "matièrespremières", "production",
+			"capacité", "pénurie", "approvisionnement",
+		},
+		negative: []string{
+			"sport", "football", "tennis", "basketball", "jeuxolympiques", "coupedumonde",
+			"célébrité", "divertissement", "cinéma", "film", "musique", "concert",
+			"mode", "mariage", "recette", "météo", "horoscope", "mots-croisés",
+			"quiz", "potins", "royauté", "bébé", "animaux",
+		},
+		multiPolitics: []string{
+			"premier ministre", "ministre des affaires étrangères", "politique étrangère",
+			"conseil de sécurité", "guerre commerciale", "accord commercial",
+			"négociations de paix", "union européenne", "nations unies",
+			"commission européenne", "crise politique",
+		},
+		multiEconomy: []string{
+			"banque centrale", "taux d'intérêt", "taux d'intérêts", "produit intérieur brut",
+			"prix à la consommation", "croissance économique", "politique budgétaire",
+			"politique monétaire", "assouplissement quantitatif", "balance commerciale",
+			"déficit commercial", "marché boursier", "dette souveraine", "dette publique",
+			"déficit budgétaire", "taux de chômage", "marché du travail",
+		},
+		multiIndustry: []string{
+			"chaîne d'approvisionnement", "chaînes d'approvisionnement",
+			"voiture électrique", "voitures électriques", "véhicule électrique",
+			"terres rares", "contrôles à l'exportation", "politique industrielle",
+			"intelligence artificielle", "transition énergétique", "énergie propre",
+			"énergies renouvelables", "combustibles fossiles", "gaz naturel",
+			"pétrole brut", "prix du pétrole", "émissions de carbone",
+			"industrie des semi-conducteurs", "production industrielle",
+		},
+		multiNegative: []string{
+			"actualités sportives", "résultats de match", "critique de film",
+			"critique musicale", "actualité people", "audiences tv", "prévisions météo",
+		},
+	},
+}
+
+// Result 是分类结果。
+type Result struct {
+	Category   Category
+	Score      int // 命中关键词次数（不含负面）
+	Confidence float64
+	NegHits    int
+}
+
+// tokenize 按 Unicode 字母切分 token（跨语言安全，变音符号视为字母的一部分）。
+func tokenize(s string) map[string]int {
+	tokens := map[string]int{}
+	var sb strings.Builder
+	flush := func() {
+		if sb.Len() > 0 {
+			tokens[sb.String()]++
+			sb.Reset()
+		}
+	}
+	for _, r := range strings.ToLower(s) {
+		if unicode.IsLetter(r) {
+			sb.WriteRune(r)
+		} else {
+			flush()
+		}
+	}
+	flush()
+	return tokens
+}
+
+// Classify 对标题+摘要进行分类，返回分类与置信度。
+func Classify(lang, title, summary string) Result {
+	text := strings.ToLower(title + " " + summary)
+	// 规范化：去重音（é→e 等），提升法语匹配率
+	text = normalize(text)
+
+	ks, ok := sets[lang]
+	if !ok {
+		ks = sets["en"]
+	}
+
+	tokens := tokenize(text)
+
+	var pol, eco, ind, neg int
+	for tok, n := range tokens {
+		if contains(ks.politics, tok) {
+			pol += n
+		}
+		if contains(ks.economy, tok) {
+			eco += n
+		}
+		if contains(ks.industry, tok) {
+			ind += n
+		}
+		if contains(ks.negative, tok) {
+			neg += n
+		}
+	}
+	// 多词短语
+	for _, p := range ks.multiPolitics {
+		if strings.Contains(text, p) {
+			pol += 2
+		}
+	}
+	for _, p := range ks.multiEconomy {
+		if strings.Contains(text, p) {
+			eco += 2
+		}
+	}
+	for _, p := range ks.multiIndustry {
+		if strings.Contains(text, p) {
+			ind += 2
+		}
+	}
+	for _, p := range ks.multiNegative {
+		if strings.Contains(text, p) {
+			neg += 2
+		}
+	}
+
+	best := Other
+	bestScore := 0
+	for _, c := range []struct {
+		cat  Category
+		sc   int
+	}{
+		{Politics, pol}, {Economy, eco}, {Industry, ind},
+	} {
+		if c.sc > bestScore {
+			best, bestScore = c.cat, c.sc
+		}
+	}
+	total := pol + eco + ind
+	conf := 0.0
+	if total > 0 {
+		conf = float64(bestScore) / float64(total)
+	}
+	// 负面命中强压：即使有分类词，娱乐/体育类内容也压回 other
+	if neg > 0 && neg >= bestScore {
+		best, bestScore = Other, 0
+	}
+	return Result{Category: best, Score: bestScore, Confidence: conf, NegHits: neg}
+}
+
+// normalize 去掉重音符号（用于跨写法匹配）。
+var accentMap = map[rune]string{
+	'é': "e", 'è': "e", 'ê': "e", 'ë': "e",
+	'à': "a", 'â': "a", 'ä': "a", 'á': "a", 'ã': "a", 'å': "a",
+	'î': "i", 'ï': "i", 'í': "i", 'ì': "i",
+	'ô': "o", 'ö': "o", 'ó': "o", 'ò': "o", 'õ': "o",
+	'û': "u", 'ü': "u", 'ú': "u", 'ù': "u",
+	'ç': "c",
+	'ß': "ss",
+	'œ': "oe", 'æ': "ae",
+}
+
+func normalize(s string) string {
+	var sb strings.Builder
+	for _, r := range s {
+		if repl, ok := accentMap[r]; ok {
+			sb.WriteString(repl)
+		} else {
+			sb.WriteRune(r)
+		}
+	}
+	return sb.String()
+}
+
+func contains(list []string, s string) bool {
+	for _, v := range list {
+		if v == s {
+			return true
+		}
+	}
+	return false
+}
