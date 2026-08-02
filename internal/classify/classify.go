@@ -130,7 +130,7 @@ var sets = map[string]keywordSet{
 			"congressional hearing", "election denier",
 		},
 		multiEconomy: []string{
-			"central bank", "interest rate", "interest rates", "gross domestic product",
+			"central bank", "federal reserve", "interest rate", "interest rates", "gross domestic product",
 			"consumer prices", "inflation rate", "economic growth", "fiscal policy",
 			"monetary policy", "quantitative easing", "balance of trade",
 			"trade deficit", "trade surplus", "stock market", "stock markets",
@@ -420,7 +420,6 @@ func Classify(lang, title, summary string) Result {
 	}
 
 	tokens := tokenize(text)
-	textLower := strings.ToLower(text)
 
 	var pol, us, eco, ind, neg int
 	for tok, n := range tokens {
@@ -444,27 +443,27 @@ func Classify(lang, title, summary string) Result {
 	if lang == "zh" {
 		pol, us, eco, ind, neg = 0, 0, 0, 0, 0
 		for _, kw := range ks.politics {
-			if strings.Contains(textLower, kw) {
+			if strings.Contains(text, kw) {
 				pol++
 			}
 		}
 		for _, kw := range ks.uspolitics {
-			if strings.Contains(textLower, kw) {
+			if strings.Contains(text, kw) {
 				us += 2
 			}
 		}
 		for _, kw := range ks.economy {
-			if strings.Contains(textLower, kw) {
+			if strings.Contains(text, kw) {
 				eco++
 			}
 		}
 		for _, kw := range ks.industry {
-			if strings.Contains(textLower, kw) {
+			if strings.Contains(text, kw) {
 				ind++
 			}
 		}
 		for _, kw := range ks.negative {
-			if strings.Contains(textLower, kw) {
+			if strings.Contains(text, kw) {
 				neg++
 			}
 		}

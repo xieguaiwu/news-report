@@ -545,9 +545,16 @@ func resolvePath(p string) string {
 // 解决 Go flag 包在第一个非 flag 参数处停止解析的问题（如 read <url> --lang de）。
 func reorderArgs(args []string) []string {
 	var ordered, pos []string
+	endOfFlags := false
 	for i := 0; i < len(args); {
 		a := args[i]
-		if strings.HasPrefix(a, "-") && a != "-" {
+		if a == "--" {
+			endOfFlags = true
+			pos = append(pos, a)
+			i++
+			continue
+		}
+		if !endOfFlags && strings.HasPrefix(a, "-") && a != "-" {
 			ordered = append(ordered, a)
 			i++
 			// flag 值：下一个参数若非 flag 开头则视为本 flag 的值

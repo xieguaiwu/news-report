@@ -83,6 +83,7 @@ func langParams(lang string) (hl, gl string) {
 	case "fr":
 		return "fr-FR", "FR"
 	case "zh":
+		// zh-TW：与台湾媒体源（中央社/自由时报）的地域定位一致；如需大陆视角可改为 zh-CN/CN
 		return "zh-TW", "TW"
 	default:
 		return "en-US", "US"
@@ -109,4 +110,4 @@ func normalizeDomain(d string) string {
 	return d
 }
 
-func version() string { return "0.1.0" }
+func version() string { return "0.2.0" }

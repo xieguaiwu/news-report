@@ -187,4 +187,4 @@ func truncate(s string, n int) string {
 	return string(r[:n]) + "…"
 }
 
-func version() string { return "0.1.0" }
+func version() string { return "0.2.0" }

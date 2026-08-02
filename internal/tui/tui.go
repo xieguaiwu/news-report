@@ -499,16 +499,17 @@ func (m Model) readerView() string {
 		sb.WriteString(styleErr.Render(m.reader.err) + "\n")
 	}
 	if m.reader.body != "" {
-		visible := m.reader.body
+		// body 按 rune 切片，避免切断多字节 UTF-8（中文/德法变音）
+		runes := []rune(m.reader.body)
 		start := m.reader.offset
-		if start > len(visible) {
-			start = len(visible)
+		if start > len(runes) {
+			start = len(runes)
 		}
-		end := start + (m.height-6)*3 // 按行高估算显示量（rune 近似）
-		if end > len(visible) {
-			end = len(visible)
+		end := start + (m.height-6)*3 // 按行高估算显示量
+		if end > len(runes) {
+			end = len(runes)
 		}
-		sb.WriteString(styleReader.Render(visible[start:end]))
+		sb.WriteString(styleReader.Render(string(runes[start:end])))
 		sb.WriteString("\n")
 	}
 	sb.WriteString(styleHelp.Render("↑↓ 滚动  PgUp/PgDn 翻页  Home/End 首尾  Esc 返回  q 退出"))
@@ -529,7 +530,7 @@ func writeCategoryMarkdown(sb *strings.Builder, m Model, cat classify.Category) 
 	}
 }
 
-// ── reader 滚动 ──────────────────────────────────────────────
+// ── reader 滚动（offset 为 rune 偏移，避免 UTF-8 截断） ────────
 
 func (r *readerState) scrollUp(n int) {
 	if r.offset > 0 {
@@ -541,10 +542,11 @@ func (r *readerState) scrollUp(n int) {
 }
 
 func (r *readerState) scrollDown(n int) {
-	if r.offset < len(r.body) {
+	max := len([]rune(r.body))
+	if r.offset < max {
 		r.offset += n
-		if r.offset > len(r.body) {
-			r.offset = len(r.body)
+		if r.offset > max {
+			r.offset = max
 		}
 	}
 }
