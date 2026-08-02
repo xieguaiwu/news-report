@@ -42,10 +42,13 @@ type Config struct {
 	StoreDays   int                       `yaml:"store_days"` // 已读记录保留天数
 	ShowSeen    bool                      `yaml:"show_seen"`  // true = 重复显示已报告过的条目
 	StrictFocus bool                      `yaml:"strict_focus"`
-	GoogleNews  bool                      `yaml:"google_news"` // 额外广度来源（谷歌新闻聚合）
-	Fulltext    int                       `yaml:"fulltext"`    // 每个分类抓取全文的条数（0 = 不抓）
-	FulltextMax int                       `yaml:"fulltext_max_chars"`
-	ReportTitle string                    `yaml:"report_title"`
+	GoogleNews  bool     `yaml:"google_news"` // 额外广度来源（谷歌新闻聚合）
+	Fulltext    int      `yaml:"fulltext"`    // 每个分类抓取全文的条数（0 = 不抓）
+	FulltextMax int      `yaml:"fulltext_max_chars"`
+	ReportTitle string   `yaml:"report_title"`
+	CacheMaxMB  int64    `yaml:"cache_max_mb"`       // feed 缓存磁盘上限（MB，0=禁用）
+	CacheTTLMin int      `yaml:"cache_ttl_minutes"`  // 统一覆写 TTL（分钟，0=按层级自动）
+	NoCache     bool     `yaml:"no_cache"`           // true=禁用缓存（同 --no-cache）
 	Sources     map[string]SourceOverride `yaml:"sources"`
 }
 
@@ -71,6 +74,9 @@ func Default() *Config {
 		Fulltext:    0,
 		FulltextMax: 3000,
 		ReportTitle: "News Report",
+		CacheMaxMB:  50,
+		CacheTTLMin: 0,
+		NoCache:     false,
 		Sources:     map[string]SourceOverride{},
 	}
 }

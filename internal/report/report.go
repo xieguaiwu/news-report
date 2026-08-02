@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"news-report/internal/article"
+	"news-report/internal/cache"
 	"news-report/internal/classify"
 	"news-report/internal/config"
 	"news-report/internal/dedup"
@@ -100,6 +101,15 @@ func Run(ctx context.Context, cfg *config.Config, fetcher *fetch.Fetcher, opts O
 		opts.FulltextMax = cfg.FulltextMax
 	}
 
+	// 0. 缓存初始化
+	var feedCache *cache.Cache
+	if cfg.CacheMaxMB > 0 && !cfg.NoCache {
+		cacheDir := cfg.CachePath() + "/feed_cache"
+		ttl := time.Duration(cfg.CacheTTLMin) * time.Minute
+		feedCache = cache.New(cacheDir, cfg.CacheMaxMB*1024*1024, ttl)
+		_, _ = feedCache.Purge()
+	}
+
 	// 1. 构建来源列表
 	srcList := buildSources(cfg, opts)
 	if len(srcList) == 0 {
@@ -120,7 +130,7 @@ func Run(ctx context.Context, cfg *config.Config, fetcher *fetch.Fetcher, opts O
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			items, stat := collectSource(ctx, fetcher, s, cfg.Retries)
+			items, stat := collectSource(ctx, fetcher, s, cfg.Retries, feedCache, cfg.NoCache)
 			results[i] = srcResult{stat: stat, items: items}
 		}(i, s)
 	}
@@ -354,7 +364,7 @@ func buildSources(cfg *config.Config, opts Options) []sources.Source {
 }
 
 // collectSource 抓取单个来源：依次尝试 feed，全部失败/为空时尝试 scrape 兜底。
-func collectSource(ctx context.Context, f *fetch.Fetcher, s sources.Source, retries int) ([]feed.Item, SourceStat) {
+func collectSource(ctx context.Context, f *fetch.Fetcher, s sources.Source, retries int, feedCache *cache.Cache, noCache bool) ([]feed.Item, SourceStat) {
 	stat := SourceStat{ID: s.ID, Name: s.Name, Lang: s.Lang, Tier: string(s.Tier), Feeds: s.Feeds}
 	var items []feed.Item
 	var lastErr string
@@ -363,12 +373,26 @@ func collectSource(ctx context.Context, f *fetch.Fetcher, s sources.Source, retr
 		sctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 		var data []byte
 		var err error
-		if s.UserAgent != "" {
-			data, err = f.BytesUA(sctx, feedURL, s.UserAgent)
-		} else {
-			data, err = f.Bytes(sctx, feedURL)
+		// 读缓存
+		if feedCache != nil && !noCache {
+			if e := feedCache.Get(feedURL, sources.Tier(s.Tier)); e != nil && len(e.Body) > 0 {
+				data = e.Body
+			}
 		}
-		cancel()
+		if data == nil {
+			if s.UserAgent != "" {
+				data, err = f.BytesUA(sctx, feedURL, s.UserAgent)
+			} else {
+				data, err = f.Bytes(sctx, feedURL)
+			}
+			cancel()
+			// 新鲜数据写缓存
+			if err == nil && feedCache != nil && !noCache {
+				_ = feedCache.Set(feedURL, data, "", "")
+			}
+		} else {
+			cancel()
+		}
 		if err != nil {
 			lastErr = err.Error()
 			continue

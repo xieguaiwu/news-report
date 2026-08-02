@@ -361,7 +361,7 @@
       "label": "normalize()",
       "file_type": "code",
       "source_file": "internal/classify/classify.go",
-      "source_location": "L536",
+      "source_location": "L535",
       "_origin": "ast",
       "id": "internal_classify_classify_normalize",
       "community": 6,
@@ -372,7 +372,7 @@
       "label": "contains()",
       "file_type": "code",
       "source_file": "internal/classify/classify.go",
-      "source_location": "L548",
+      "source_location": "L547",
       "_origin": "ast",
       "id": "internal_classify_classify_contains",
       "community": 6,
@@ -474,8 +474,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "internal_config_config",
-      "community": 16,
-      "community_name": "Model",
+      "community": 1,
+      "community_name": "Config",
       "norm_label": "config.go"
     },
     {
@@ -485,8 +485,8 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "config_sourceoverride",
-      "community": 16,
-      "community_name": "Model",
+      "community": 1,
+      "community_name": "Config",
       "norm_label": "sourceoverride"
     },
     {
@@ -496,8 +496,8 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "config_config",
-      "community": 16,
-      "community_name": "Model",
+      "community": 1,
+      "community_name": "Config",
       "norm_label": "config"
     },
     {
@@ -508,7 +508,7 @@
       "_origin": "ast",
       "id": "internal_config_config_default",
       "community": 1,
-      "community_name": "main.go",
+      "community_name": "Config",
       "norm_label": "default()"
     },
     {
@@ -518,8 +518,8 @@
       "source_location": "L79",
       "_origin": "ast",
       "id": "internal_config_config_expandpath",
-      "community": 16,
-      "community_name": "Model",
+      "community": 1,
+      "community_name": "Config",
       "norm_label": "expandpath()"
     },
     {
@@ -530,7 +530,7 @@
       "_origin": "ast",
       "id": "internal_config_config_load",
       "community": 1,
-      "community_name": "main.go",
+      "community_name": "Config",
       "norm_label": "load()"
     },
     {
@@ -540,8 +540,8 @@
       "source_location": "L110",
       "_origin": "ast",
       "id": "config_config_save",
-      "community": 16,
-      "community_name": "Model",
+      "community": 1,
+      "community_name": "Config",
       "norm_label": ".save()"
     },
     {
@@ -551,8 +551,8 @@
       "source_location": "L130",
       "_origin": "ast",
       "id": "config_config_cachepath",
-      "community": 16,
-      "community_name": "Model",
+      "community": 1,
+      "community_name": "Config",
       "norm_label": ".cachepath()"
     },
     {
@@ -562,8 +562,8 @@
       "source_location": "L137",
       "_origin": "ast",
       "id": "config_config_window",
-      "community": 16,
-      "community_name": "Model",
+      "community": 1,
+      "community_name": "Config",
       "norm_label": ".window()"
     },
     {
@@ -573,8 +573,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "internal_config_config_go_duration",
-      "community": 16,
-      "community_name": "Model",
+      "community": 1,
+      "community_name": "Config",
       "norm_label": "duration"
     },
     {
@@ -584,8 +584,8 @@
       "source_location": "L145",
       "_origin": "ast",
       "id": "config_config_validate",
-      "community": 16,
-      "community_name": "Model",
+      "community": 1,
+      "community_name": "Config",
       "norm_label": ".validate()"
     },
     {
@@ -596,7 +596,7 @@
       "_origin": "ast",
       "id": "internal_config_config_test",
       "community": 1,
-      "community_name": "main.go",
+      "community_name": "Config",
       "norm_label": "config_test.go"
     },
     {
@@ -607,7 +607,7 @@
       "_origin": "ast",
       "id": "internal_config_config_test_testdefaultconfig",
       "community": 1,
-      "community_name": "main.go",
+      "community_name": "Config",
       "norm_label": "testdefaultconfig()"
     },
     {
@@ -618,7 +618,7 @@
       "_origin": "ast",
       "id": "internal_config_config_test_go_t",
       "community": 1,
-      "community_name": "main.go",
+      "community_name": "Config",
       "norm_label": "t"
     },
     {
@@ -629,7 +629,7 @@
       "_origin": "ast",
       "id": "internal_config_config_test_testloadmissingfilereturnsdefaults",
       "community": 1,
-      "community_name": "main.go",
+      "community_name": "Config",
       "norm_label": "testloadmissingfilereturnsdefaults()"
     },
     {
@@ -640,7 +640,7 @@
       "_origin": "ast",
       "id": "internal_config_config_test_testloadandoverride",
       "community": 1,
-      "community_name": "main.go",
+      "community_name": "Config",
       "norm_label": "testloadandoverride()"
     },
     {
@@ -651,7 +651,7 @@
       "_origin": "ast",
       "id": "internal_config_config_test_testsaveroundtrip",
       "community": 1,
-      "community_name": "main.go",
+      "community_name": "Config",
       "norm_label": "testsaveroundtrip()"
     },
     {
@@ -662,7 +662,7 @@
       "_origin": "ast",
       "id": "internal_config_config_test_testvalidateerrors",
       "community": 1,
-      "community_name": "main.go",
+      "community_name": "Config",
       "norm_label": "testvalidateerrors()"
     },
     {
@@ -673,7 +673,7 @@
       "_origin": "ast",
       "id": "internal_config_config_test_boolptr",
       "community": 1,
-      "community_name": "main.go",
+      "community_name": "Config",
       "norm_label": "boolptr()"
     },
     {
@@ -1714,7 +1714,7 @@
       "label": "splitTitleSource()",
       "file_type": "code",
       "source_file": "internal/gnews/gnews.go",
-      "source_location": "L93",
+      "source_location": "L94",
       "_origin": "ast",
       "id": "internal_gnews_gnews_splittitlesource",
       "community": 17,
@@ -1725,7 +1725,7 @@
       "label": "normalizeDomain()",
       "file_type": "code",
       "source_file": "internal/gnews/gnews.go",
-      "source_location": "L101",
+      "source_location": "L102",
       "_origin": "ast",
       "id": "internal_gnews_gnews_normalizedomain",
       "community": 17,
@@ -1736,7 +1736,7 @@
       "label": "version()",
       "file_type": "code",
       "source_file": "internal/gnews/gnews.go",
-      "source_location": "L112",
+      "source_location": "L113",
       "_origin": "ast",
       "id": "internal_gnews_gnews_version",
       "community": 17,
@@ -3320,7 +3320,7 @@
       "label": "catColorIcon()",
       "file_type": "code",
       "source_file": "internal/tui/tui.go",
-      "source_location": "L518",
+      "source_location": "L519",
       "_origin": "ast",
       "id": "internal_tui_tui_catcoloricon",
       "community": 16,
@@ -3331,7 +3331,7 @@
       "label": "writeCategoryMarkdown()",
       "file_type": "code",
       "source_file": "internal/tui/tui.go",
-      "source_location": "L523",
+      "source_location": "L524",
       "_origin": "ast",
       "id": "internal_tui_tui_writecategorymarkdown",
       "community": 16,
@@ -3353,7 +3353,7 @@
       "label": ".scrollUp()",
       "file_type": "code",
       "source_file": "internal/tui/tui.go",
-      "source_location": "L534",
+      "source_location": "L535",
       "_origin": "ast",
       "id": "tui_readerstate_scrollup",
       "community": 16,
@@ -3364,7 +3364,7 @@
       "label": ".scrollDown()",
       "file_type": "code",
       "source_file": "internal/tui/tui.go",
-      "source_location": "L543",
+      "source_location": "L544",
       "_origin": "ast",
       "id": "tui_readerstate_scrolldown",
       "community": 16,
@@ -3375,7 +3375,7 @@
       "label": "openBrowser()",
       "file_type": "code",
       "source_file": "internal/tui/tui.go",
-      "source_location": "L554",
+      "source_location": "L556",
       "_origin": "ast",
       "id": "internal_tui_tui_openbrowser",
       "community": 16,
@@ -3533,7 +3533,7 @@
       "_origin": "ast",
       "id": "main",
       "community": 1,
-      "community_name": "main.go",
+      "community_name": "Config",
       "norm_label": "main.go"
     },
     {
@@ -3544,7 +3544,7 @@
       "_origin": "ast",
       "id": "main_main",
       "community": 1,
-      "community_name": "main.go",
+      "community_name": "Config",
       "norm_label": "main()"
     },
     {
@@ -3555,7 +3555,7 @@
       "_origin": "ast",
       "id": "main_usage",
       "community": 1,
-      "community_name": "main.go",
+      "community_name": "Config",
       "norm_label": "usage()"
     },
     {
@@ -3566,7 +3566,7 @@
       "_origin": "ast",
       "id": "main_runreport",
       "community": 1,
-      "community_name": "main.go",
+      "community_name": "Config",
       "norm_label": "runreport()"
     },
     {
@@ -3577,7 +3577,7 @@
       "_origin": "ast",
       "id": "main_applyflags",
       "community": 1,
-      "community_name": "main.go",
+      "community_name": "Config",
       "norm_label": "applyflags()"
     },
     {
@@ -3588,7 +3588,7 @@
       "_origin": "ast",
       "id": "main_runread",
       "community": 1,
-      "community_name": "main.go",
+      "community_name": "Config",
       "norm_label": "runread()"
     },
     {
@@ -3599,7 +3599,7 @@
       "_origin": "ast",
       "id": "main_runfind",
       "community": 1,
-      "community_name": "main.go",
+      "community_name": "Config",
       "norm_label": "runfind()"
     },
     {
@@ -3610,7 +3610,7 @@
       "_origin": "ast",
       "id": "main_runui",
       "community": 1,
-      "community_name": "main.go",
+      "community_name": "Config",
       "norm_label": "runui()"
     },
     {
@@ -3621,7 +3621,7 @@
       "_origin": "ast",
       "id": "main_runsources",
       "community": 1,
-      "community_name": "main.go",
+      "community_name": "Config",
       "norm_label": "runsources()"
     },
     {
@@ -3632,7 +3632,7 @@
       "_origin": "ast",
       "id": "main_feedcount",
       "community": 1,
-      "community_name": "main.go",
+      "community_name": "Config",
       "norm_label": "feedcount()"
     },
     {
@@ -3643,7 +3643,7 @@
       "_origin": "ast",
       "id": "main_runinit",
       "community": 1,
-      "community_name": "main.go",
+      "community_name": "Config",
       "norm_label": "runinit()"
     },
     {
@@ -3654,7 +3654,7 @@
       "_origin": "ast",
       "id": "main_resolvepath",
       "community": 1,
-      "community_name": "main.go",
+      "community_name": "Config",
       "norm_label": "resolvepath()"
     },
     {
@@ -3665,63 +3665,283 @@
       "_origin": "ast",
       "id": "main_reorderargs",
       "community": 1,
-      "community_name": "main.go",
+      "community_name": "Config",
       "norm_label": "reorderargs()"
     },
     {
       "label": "split()",
       "file_type": "code",
       "source_file": "main.go",
-      "source_location": "L566",
+      "source_location": "L573",
       "_origin": "ast",
       "id": "main_split",
       "community": 1,
-      "community_name": "main.go",
+      "community_name": "Config",
       "norm_label": "split()"
     },
     {
       "label": "trunc()",
       "file_type": "code",
       "source_file": "main.go",
-      "source_location": "L577",
+      "source_location": "L584",
       "_origin": "ast",
       "id": "main_trunc",
       "community": 1,
-      "community_name": "main.go",
+      "community_name": "Config",
       "norm_label": "trunc()"
     },
     {
       "label": "fatal()",
       "file_type": "code",
       "source_file": "main.go",
-      "source_location": "L587",
+      "source_location": "L594",
       "_origin": "ast",
       "id": "main_fatal",
       "community": 1,
-      "community_name": "main.go",
+      "community_name": "Config",
       "norm_label": "fatal()"
     },
     {
       "label": "fatalMsg()",
       "file_type": "code",
       "source_file": "main.go",
-      "source_location": "L592",
+      "source_location": "L599",
       "_origin": "ast",
       "id": "main_fatalmsg",
       "community": 1,
-      "community_name": "main.go",
+      "community_name": "Config",
       "norm_label": "fatalmsg()"
     },
     {
       "label": "isTerminal()",
       "file_type": "code",
       "source_file": "main.go",
-      "source_location": "L597",
+      "source_location": "L604",
       "_origin": "ast",
       "id": "main_isterminal",
       "community": 1,
-      "community_name": "main.go",
+      "community_name": "Config",
       "norm_label": "isterminal()"
+    },
+    {
+      "label": "09651739_momus_0_input.md",
+      "file_type": "document",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_input.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "pi_subagents_artifacts_09651739_momus_0_input",
+      "community": 24,
+      "community_name": "Task for momus",
+      "norm_label": "09651739_momus_0_input.md"
+    },
+    {
+      "label": "Task for momus",
+      "file_type": "document",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_input.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "pi_subagents_artifacts_09651739_momus_0_input_task_for_momus",
+      "community": 24,
+      "community_name": "Task for momus",
+      "norm_label": "task for momus"
+    },
+    {
+      "label": "Acceptance Contract",
+      "file_type": "document",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_input.md",
+      "source_location": "L15",
+      "_origin": "ast",
+      "id": "pi_subagents_artifacts_09651739_momus_0_input_acceptance_contract",
+      "community": 24,
+      "community_name": "Task for momus",
+      "norm_label": "acceptance contract"
+    },
+    {
+      "label": "09651739_momus_0_output.md",
+      "file_type": "document",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "pi_subagents_artifacts_09651739_momus_0_output",
+      "community": 23,
+      "community_name": "Momus Code Review \u2014 news-report v0.2.0",
+      "norm_label": "09651739_momus_0_output.md"
+    },
+    {
+      "label": "Momus Code Review \u2014 news-report v0.2.0",
+      "file_type": "document",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L5",
+      "_origin": "ast",
+      "id": "pi_subagents_artifacts_09651739_momus_0_output_momus_code_review_news_report_v0_2_0",
+      "community": 23,
+      "community_name": "Momus Code Review \u2014 news-report v0.2.0",
+      "norm_label": "momus code review \u2014 news-report v0.2.0"
+    },
+    {
+      "label": "CRITICAL",
+      "file_type": "document",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L9",
+      "_origin": "ast",
+      "id": "pi_subagents_artifacts_09651739_momus_0_output_critical",
+      "community": 23,
+      "community_name": "Momus Code Review \u2014 news-report v0.2.0",
+      "norm_label": "critical"
+    },
+    {
+      "label": "CRITICAL-1: `internal/tui/tui.go:268-278` \u2014 readerView \u6309\u5b57\u8282\u5207\u7247\u5bfc\u81f4 UTF-8 \u591a\u5b57\u8282\u5b57\u7b26\u88ab\u622a\u65ad",
+      "file_type": "document",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L11",
+      "_origin": "ast",
+      "id": "pi_subagents_artifacts_09651739_momus_0_output_critical_1_internal_tui_tui_go_268_278_readerview_\u6309\u5b57\u8282\u5207\u7247\u5bfc\u81f4_utf_8_\u591a\u5b57\u8282\u5b57\u7b26\u88ab\u622a\u65ad",
+      "community": 23,
+      "community_name": "Momus Code Review \u2014 news-report v0.2.0",
+      "norm_label": "critical-1: `internal/tui/tui.go:268-278` \u2014 readerview \u6309\u5b57\u8282\u5207\u7247\u5bfc\u81f4 utf-8 \u591a\u5b57\u8282\u5b57\u7b26\u88ab\u622a\u65ad"
+    },
+    {
+      "label": "HIGH",
+      "file_type": "document",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L38",
+      "_origin": "ast",
+      "id": "pi_subagents_artifacts_09651739_momus_0_output_high",
+      "community": 23,
+      "community_name": "Momus Code Review \u2014 news-report v0.2.0",
+      "norm_label": "high"
+    },
+    {
+      "label": "HIGH-1: `internal/classify/classify.go:79-87,269-281` \u2014 \"federal\" \u5355 token (uspolitics \u00d72) \u4e0e \"Federal Reserve\" \u8d22\u7ecf\u65b0\u95fb\u8bef\u5206\u7c7b",
+      "file_type": "document",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L40",
+      "_origin": "ast",
+      "id": "pi_subagents_artifacts_09651739_momus_0_output_high_1_internal_classify_classify_go_79_87_269_281_federal_\u5355_token_uspolitics_2_\u4e0e_federal_reserve_\u8d22\u7ecf\u65b0\u95fb\u8bef\u5206\u7c7b",
+      "community": 23,
+      "community_name": "Momus Code Review \u2014 news-report v0.2.0",
+      "norm_label": "high-1: `internal/classify/classify.go:79-87,269-281` \u2014 \"federal\" \u5355 token (uspolitics \u00d72) \u4e0e \"federal reserve\" \u8d22\u7ecf\u65b0\u95fb\u8bef\u5206\u7c7b"
+    },
+    {
+      "label": "HIGH-2: `internal/feed/feed.go:134` \u2014 CST \u65f6\u533a\u6b67\u4e49\u4e0e\u6ce8\u91ca\u77db\u76fe",
+      "file_type": "document",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L70",
+      "_origin": "ast",
+      "id": "pi_subagents_artifacts_09651739_momus_0_output_high_2_internal_feed_feed_go_134_cst_\u65f6\u533a\u6b67\u4e49\u4e0e\u6ce8\u91ca\u77db\u76fe",
+      "community": 23,
+      "community_name": "Momus Code Review \u2014 news-report v0.2.0",
+      "norm_label": "high-2: `internal/feed/feed.go:134` \u2014 cst \u65f6\u533a\u6b67\u4e49\u4e0e\u6ce8\u91ca\u77db\u76fe"
+    },
+    {
+      "label": "MEDIUM",
+      "file_type": "document",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L90",
+      "_origin": "ast",
+      "id": "pi_subagents_artifacts_09651739_momus_0_output_medium",
+      "community": 23,
+      "community_name": "Momus Code Review \u2014 news-report v0.2.0",
+      "norm_label": "medium"
+    },
+    {
+      "label": "MEDIUM-1: `internal/main.go:322-340` \u2014 reorderArgs \u5c06 `--`\uff08POSIX \u9009\u9879\u7ec8\u6b62\u7b26\uff09\u8bef\u8ba4\u4e3a flag",
+      "file_type": "document",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L92",
+      "_origin": "ast",
+      "id": "pi_subagents_artifacts_09651739_momus_0_output_medium_1_internal_main_go_322_340_reorderargs_\u5c06_posix_\u9009\u9879\u7ec8\u6b62\u7b26_\u8bef\u8ba4\u4e3a_flag",
+      "community": 23,
+      "community_name": "Momus Code Review \u2014 news-report v0.2.0",
+      "norm_label": "medium-1: `internal/main.go:322-340` \u2014 reorderargs \u5c06 `--`(posix \u9009\u9879\u7ec8\u6b62\u7b26)\u8bef\u8ba4\u4e3a flag"
+    },
+    {
+      "label": "MEDIUM-2: `internal/classify/classify.go:170` \u2014 `textLower` \u5197\u4f59\u8ba1\u7b97",
+      "file_type": "document",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L105",
+      "_origin": "ast",
+      "id": "pi_subagents_artifacts_09651739_momus_0_output_medium_2_internal_classify_classify_go_170_textlower_\u5197\u4f59\u8ba1\u7b97",
+      "community": 23,
+      "community_name": "Momus Code Review \u2014 news-report v0.2.0",
+      "norm_label": "medium-2: `internal/classify/classify.go:170` \u2014 `textlower` \u5197\u4f59\u8ba1\u7b97"
+    },
+    {
+      "label": "MEDIUM-3: `internal/gnews/gnews.go:98-106` \u2014 zh \u786c\u7f16\u7801\u4e3a zh-TW/TW\uff0c\u53ef\u80fd\u5f71\u54cd\u641c\u7d22\u7ed3\u679c\u5730\u57df\u504f\u5411",
+      "file_type": "document",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L118",
+      "_origin": "ast",
+      "id": "pi_subagents_artifacts_09651739_momus_0_output_medium_3_internal_gnews_gnews_go_98_106_zh_\u786c\u7f16\u7801\u4e3a_zh_tw_tw_\u53ef\u80fd\u5f71\u54cd\u641c\u7d22\u7ed3\u679c\u5730\u57df\u504f\u5411",
+      "community": 23,
+      "community_name": "Momus Code Review \u2014 news-report v0.2.0",
+      "norm_label": "medium-3: `internal/gnews/gnews.go:98-106` \u2014 zh \u786c\u7f16\u7801\u4e3a zh-tw/tw,\u53ef\u80fd\u5f71\u54cd\u641c\u7d22\u7ed3\u679c\u5730\u57df\u504f\u5411"
+    },
+    {
+      "label": "MEDIUM-4: \u5168\u5c40 `Version` \u5e38\u91cf/\u51fd\u6570\u5747\u505c\u7559\u5728 `0.1.0`",
+      "file_type": "document",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L129",
+      "_origin": "ast",
+      "id": "pi_subagents_artifacts_09651739_momus_0_output_medium_4_\u5168\u5c40_version_\u5e38\u91cf_\u51fd\u6570\u5747\u505c\u7559\u5728_0_1_0",
+      "community": 23,
+      "community_name": "Momus Code Review \u2014 news-report v0.2.0",
+      "norm_label": "medium-4: \u5168\u5c40 `version` \u5e38\u91cf/\u51fd\u6570\u5747\u505c\u7559\u5728 `0.1.0`"
+    },
+    {
+      "label": "LOW",
+      "file_type": "document",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L143",
+      "_origin": "ast",
+      "id": "pi_subagents_artifacts_09651739_momus_0_output_low",
+      "community": 23,
+      "community_name": "Momus Code Review \u2014 news-report v0.2.0",
+      "norm_label": "low"
+    },
+    {
+      "label": "LOW-1: `internal/report/report.go:171-181` \u2014 catOrder \u96f6\u503c\u8bed\u4e49\u5bfc\u81f4\u672a\u6307\u5b9a\u5206\u7c7b\u4e0e\u9996\u4e2a\u6307\u5b9a\u5206\u7c7b\u6392\u5e8f\u540c\u7ea7",
+      "file_type": "document",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L145",
+      "_origin": "ast",
+      "id": "pi_subagents_artifacts_09651739_momus_0_output_low_1_internal_report_report_go_171_181_catorder_\u96f6\u503c\u8bed\u4e49\u5bfc\u81f4\u672a\u6307\u5b9a\u5206\u7c7b\u4e0e\u9996\u4e2a\u6307\u5b9a\u5206\u7c7b\u6392\u5e8f\u540c\u7ea7",
+      "community": 23,
+      "community_name": "Momus Code Review \u2014 news-report v0.2.0",
+      "norm_label": "low-1: `internal/report/report.go:171-181` \u2014 catorder \u96f6\u503c\u8bed\u4e49\u5bfc\u81f4\u672a\u6307\u5b9a\u5206\u7c7b\u4e0e\u9996\u4e2a\u6307\u5b9a\u5206\u7c7b\u6392\u5e8f\u540c\u7ea7"
+    },
+    {
+      "label": "LOW-2: `internal/article/article.go:97` \u2014 looksPaywalled \u7684 `\"access denied\"` \u6807\u8bb0\u53ef\u80fd\u8bef\u89e6\u53d1\u4e8e CDN/WAF \u9519\u8bef\u9875",
+      "file_type": "document",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L162",
+      "_origin": "ast",
+      "id": "pi_subagents_artifacts_09651739_momus_0_output_low_2_internal_article_article_go_97_lookspaywalled_\u7684_access_denied_\u6807\u8bb0\u53ef\u80fd\u8bef\u89e6\u53d1\u4e8e_cdn_waf_\u9519\u8bef\u9875",
+      "community": 23,
+      "community_name": "Momus Code Review \u2014 news-report v0.2.0",
+      "norm_label": "low-2: `internal/article/article.go:97` \u2014 lookspaywalled \u7684 `\"access denied\"` \u6807\u8bb0\u53ef\u80fd\u8bef\u89e6\u53d1\u4e8e cdn/waf \u9519\u8bef\u9875"
+    },
+    {
+      "label": "LOW-3: `internal/classify/classify.go:8-23` \u2014 init() \u4e2d\u91cd\u590d\u8c03\u7528 `sets[lang] = ks` \u4f46 `ks` \u662f\u503c\u62f7\u8d1d",
+      "file_type": "document",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L174",
+      "_origin": "ast",
+      "id": "pi_subagents_artifacts_09651739_momus_0_output_low_3_internal_classify_classify_go_8_23_init_\u4e2d\u91cd\u590d\u8c03\u7528_sets_lang_ks_\u4f46_ks_\u662f\u503c\u62f7\u8d1d",
+      "community": 23,
+      "community_name": "Momus Code Review \u2014 news-report v0.2.0",
+      "norm_label": "low-3: `internal/classify/classify.go:8-23` \u2014 init() \u4e2d\u91cd\u590d\u8c03\u7528 `sets[lang] = ks` \u4f46 `ks` \u662f\u503c\u62f7\u8d1d"
+    },
+    {
+      "label": "\u5e76\u53d1\u5b89\u5168\u6027\u786e\u8ba4",
+      "file_type": "document",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L190",
+      "_origin": "ast",
+      "id": "pi_subagents_artifacts_09651739_momus_0_output_\u5e76\u53d1\u5b89\u5168\u6027\u786e\u8ba4",
+      "community": 23,
+      "community_name": "Momus Code Review \u2014 news-report v0.2.0",
+      "norm_label": "\u5e76\u53d1\u5b89\u5168\u6027\u786e\u8ba4"
     },
     {
       "label": "547c1073_librarian_0_input.md",
@@ -4995,7 +5215,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "internal/classify/classify.go",
-      "source_location": "L548",
+      "source_location": "L547",
       "weight": 1.0,
       "_origin": "ast",
       "source": "internal_classify_classify",
@@ -5017,7 +5237,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "internal/classify/classify.go",
-      "source_location": "L536",
+      "source_location": "L535",
       "weight": 1.0,
       "_origin": "ast",
       "source": "internal_classify_classify",
@@ -5098,7 +5318,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "internal/tui/tui.go",
-      "source_location": "L518",
+      "source_location": "L519",
       "weight": 1.0,
       "context": "parameter_type",
       "_origin": "ast",
@@ -5110,7 +5330,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "internal/tui/tui.go",
-      "source_location": "L523",
+      "source_location": "L524",
       "weight": 1.0,
       "context": "parameter_type",
       "_origin": "ast",
@@ -5207,7 +5427,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "internal/classify/classify.go",
-      "source_location": "L427",
+      "source_location": "L426",
       "weight": 1.0,
       "_origin": "ast",
       "source": "internal_classify_classify_classify",
@@ -8439,7 +8659,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "internal/gnews/gnews.go",
-      "source_location": "L101",
+      "source_location": "L102",
       "weight": 1.0,
       "_origin": "ast",
       "source": "internal_gnews_gnews",
@@ -8461,7 +8681,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "internal/gnews/gnews.go",
-      "source_location": "L93",
+      "source_location": "L94",
       "weight": 1.0,
       "_origin": "ast",
       "source": "internal_gnews_gnews",
@@ -8472,7 +8692,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "internal/gnews/gnews.go",
-      "source_location": "L112",
+      "source_location": "L113",
       "weight": 1.0,
       "_origin": "ast",
       "source": "internal_gnews_gnews",
@@ -11353,7 +11573,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "internal/tui/tui.go",
-      "source_location": "L518",
+      "source_location": "L519",
       "weight": 1.0,
       "_origin": "ast",
       "source": "internal_tui_tui",
@@ -11397,7 +11617,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "internal/tui/tui.go",
-      "source_location": "L554",
+      "source_location": "L556",
       "weight": 1.0,
       "_origin": "ast",
       "source": "internal_tui_tui",
@@ -11430,7 +11650,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "internal/tui/tui.go",
-      "source_location": "L523",
+      "source_location": "L524",
       "weight": 1.0,
       "_origin": "ast",
       "source": "internal_tui_tui",
@@ -11567,7 +11787,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "internal/tui/tui.go",
-      "source_location": "L523",
+      "source_location": "L524",
       "weight": 1.0,
       "context": "parameter_type",
       "_origin": "ast",
@@ -11821,7 +12041,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "internal/tui/tui.go",
-      "source_location": "L543",
+      "source_location": "L544",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_readerstate",
@@ -11832,7 +12052,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "internal/tui/tui.go",
-      "source_location": "L534",
+      "source_location": "L535",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_readerstate",
@@ -12300,7 +12520,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "internal/tui/tui.go",
-      "source_location": "L524",
+      "source_location": "L525",
       "weight": 1.0,
       "_origin": "ast",
       "source": "internal_tui_tui_writecategorymarkdown",
@@ -12419,7 +12639,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "internal/tui/tui.go",
-      "source_location": "L523",
+      "source_location": "L524",
       "weight": 1.0,
       "context": "parameter_type",
       "_origin": "ast",
@@ -12792,7 +13012,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "main.go",
-      "source_location": "L587",
+      "source_location": "L594",
       "weight": 1.0,
       "_origin": "ast",
       "source": "main",
@@ -12803,7 +13023,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "main.go",
-      "source_location": "L592",
+      "source_location": "L599",
       "weight": 1.0,
       "_origin": "ast",
       "source": "main",
@@ -12825,7 +13045,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "main.go",
-      "source_location": "L597",
+      "source_location": "L604",
       "weight": 1.0,
       "_origin": "ast",
       "source": "main",
@@ -12935,7 +13155,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "main.go",
-      "source_location": "L566",
+      "source_location": "L573",
       "weight": 1.0,
       "_origin": "ast",
       "source": "main",
@@ -12946,7 +13166,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "main.go",
-      "source_location": "L577",
+      "source_location": "L584",
       "weight": 1.0,
       "_origin": "ast",
       "source": "main",
@@ -13274,6 +13494,204 @@
       "_origin": "ast",
       "source": "main_runinit",
       "target": "main_resolvepath",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_input.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "pi_subagents_artifacts_09651739_momus_0_input",
+      "target": "pi_subagents_artifacts_09651739_momus_0_input_task_for_momus",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_input.md",
+      "source_location": "L15",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "pi_subagents_artifacts_09651739_momus_0_input_task_for_momus",
+      "target": "pi_subagents_artifacts_09651739_momus_0_input_acceptance_contract",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L5",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "pi_subagents_artifacts_09651739_momus_0_output",
+      "target": "pi_subagents_artifacts_09651739_momus_0_output_momus_code_review_news_report_v0_2_0",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L9",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "pi_subagents_artifacts_09651739_momus_0_output_momus_code_review_news_report_v0_2_0",
+      "target": "pi_subagents_artifacts_09651739_momus_0_output_critical",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L38",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "pi_subagents_artifacts_09651739_momus_0_output_momus_code_review_news_report_v0_2_0",
+      "target": "pi_subagents_artifacts_09651739_momus_0_output_high",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L143",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "pi_subagents_artifacts_09651739_momus_0_output_momus_code_review_news_report_v0_2_0",
+      "target": "pi_subagents_artifacts_09651739_momus_0_output_low",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L90",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "pi_subagents_artifacts_09651739_momus_0_output_momus_code_review_news_report_v0_2_0",
+      "target": "pi_subagents_artifacts_09651739_momus_0_output_medium",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L190",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "pi_subagents_artifacts_09651739_momus_0_output_momus_code_review_news_report_v0_2_0",
+      "target": "pi_subagents_artifacts_09651739_momus_0_output_\u5e76\u53d1\u5b89\u5168\u6027\u786e\u8ba4",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L11",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "pi_subagents_artifacts_09651739_momus_0_output_critical",
+      "target": "pi_subagents_artifacts_09651739_momus_0_output_critical_1_internal_tui_tui_go_268_278_readerview_\u6309\u5b57\u8282\u5207\u7247\u5bfc\u81f4_utf_8_\u591a\u5b57\u8282\u5b57\u7b26\u88ab\u622a\u65ad",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L40",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "pi_subagents_artifacts_09651739_momus_0_output_high",
+      "target": "pi_subagents_artifacts_09651739_momus_0_output_high_1_internal_classify_classify_go_79_87_269_281_federal_\u5355_token_uspolitics_2_\u4e0e_federal_reserve_\u8d22\u7ecf\u65b0\u95fb\u8bef\u5206\u7c7b",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L70",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "pi_subagents_artifacts_09651739_momus_0_output_high",
+      "target": "pi_subagents_artifacts_09651739_momus_0_output_high_2_internal_feed_feed_go_134_cst_\u65f6\u533a\u6b67\u4e49\u4e0e\u6ce8\u91ca\u77db\u76fe",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L92",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "pi_subagents_artifacts_09651739_momus_0_output_medium",
+      "target": "pi_subagents_artifacts_09651739_momus_0_output_medium_1_internal_main_go_322_340_reorderargs_\u5c06_posix_\u9009\u9879\u7ec8\u6b62\u7b26_\u8bef\u8ba4\u4e3a_flag",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L105",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "pi_subagents_artifacts_09651739_momus_0_output_medium",
+      "target": "pi_subagents_artifacts_09651739_momus_0_output_medium_2_internal_classify_classify_go_170_textlower_\u5197\u4f59\u8ba1\u7b97",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L118",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "pi_subagents_artifacts_09651739_momus_0_output_medium",
+      "target": "pi_subagents_artifacts_09651739_momus_0_output_medium_3_internal_gnews_gnews_go_98_106_zh_\u786c\u7f16\u7801\u4e3a_zh_tw_tw_\u53ef\u80fd\u5f71\u54cd\u641c\u7d22\u7ed3\u679c\u5730\u57df\u504f\u5411",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L129",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "pi_subagents_artifacts_09651739_momus_0_output_medium",
+      "target": "pi_subagents_artifacts_09651739_momus_0_output_medium_4_\u5168\u5c40_version_\u5e38\u91cf_\u51fd\u6570\u5747\u505c\u7559\u5728_0_1_0",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L145",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "pi_subagents_artifacts_09651739_momus_0_output_low",
+      "target": "pi_subagents_artifacts_09651739_momus_0_output_low_1_internal_report_report_go_171_181_catorder_\u96f6\u503c\u8bed\u4e49\u5bfc\u81f4\u672a\u6307\u5b9a\u5206\u7c7b\u4e0e\u9996\u4e2a\u6307\u5b9a\u5206\u7c7b\u6392\u5e8f\u540c\u7ea7",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L162",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "pi_subagents_artifacts_09651739_momus_0_output_low",
+      "target": "pi_subagents_artifacts_09651739_momus_0_output_low_2_internal_article_article_go_97_lookspaywalled_\u7684_access_denied_\u6807\u8bb0\u53ef\u80fd\u8bef\u89e6\u53d1\u4e8e_cdn_waf_\u9519\u8bef\u9875",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".pi-subagents/artifacts/09651739_momus_0_output.md",
+      "source_location": "L174",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "pi_subagents_artifacts_09651739_momus_0_output_low",
+      "target": "pi_subagents_artifacts_09651739_momus_0_output_low_3_internal_classify_classify_go_8_23_init_\u4e2d\u91cd\u590d\u8c03\u7528_sets_lang_ks_\u4f46_ks_\u662f\u503c\u62f7\u8d1d",
       "confidence_score": 1.0
     },
     {
@@ -13982,5 +14400,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "382120c5a68deb16b7ded4434346143563119d88"
+  "built_at_commit": "7c8a34e8a3e0eb41bf24e35ced5257c9f70656ed"
 }

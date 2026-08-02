@@ -50,6 +50,8 @@ func main() {
 		runSources(os.Args[2:])
 	case "init":
 		runInit(os.Args[2:])
+	case "cache":
+		runCache(os.Args[2:])
 	case "version", "-v", "--version":
 		fmt.Printf("news-report v%s\n", config.Version)
 	case "help", "-h", "--help":
@@ -123,6 +125,7 @@ func runReport(args []string) {
 		timeout   = fs.Int("timeout", 0, "")
 		noColor   = fs.Bool("no-color", false, "")
 		noRobots  = fs.Bool("no-robots", false, "")
+		noCache   = fs.Bool("no-cache", false, "")
 		cfgPath   = fs.String("config", "", "")
 	)
 	fs.Usage = func() {}
@@ -148,6 +151,9 @@ func runReport(args []string) {
 		Retries:   cfg.Retries,
 		NoRobots:  *noRobots,
 	})
+	if *noCache {
+		cfg.NoCache = true
+	}
 
 	opts := report.Options{
 		Window:      cfg.Window(),
@@ -396,6 +402,19 @@ func runUI(args []string) {
 	if err := tui.Run(ctx, cfg, fetcher, opts); err != nil {
 		fatal(err)
 	}
+}
+
+// ── cache ────────────────────────────────────────────────────
+
+func runCache(args []string) {
+	if len(args) > 0 && args[0] == "clear" {
+		cfg, _ := config.Load("")
+		cd := cfg.CachePath()
+		_ = os.RemoveAll(cd + "/feed_cache")
+		fmt.Println("缓存已清空:", cd+"/feed_cache")
+		return
+	}
+	fmt.Println("用法: news-report cache clear")
 }
 
 // ── sources ───────────────────────────────────────────────────

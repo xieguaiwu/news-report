@@ -1,0 +1,214 @@
+{
+  "runId": "973e6457",
+  "agent": "momus",
+  "task": "对比 news-report 的 interactive TUI（internal/tui/tui.go） 与 ~/prompt_boilerplates/Coding/interactive-cli-design.md 规范，输出缺失项 checklist。\n\n规范文件已加载在上下文中。只读代码：\n- internal/tui/tui.go（模型/Update/View/handleKey/handleFilterKey/handleReaderKey）\n- internal/tui/tui_test.go（现有测试）\n\n按 §§1-5 逐条对照，输出：\n- P0（强制缺失）：键位绑定缺失、搜索 n/N 导航缺失、帮助 ? 缺失\n- P1（界面缺失）：位置指示器、空格翻页、NO_COLOR 遵守\n- P2（测试缺失）：PTY 测试、非交互降级测试\n- 已有 ≡ 符合项（列出已实现的规范条目）\n\n格式：Markdown checklist，每项标注 文件:行号 与优先级。只读，不写代码。",
+  "exitCode": 0,
+  "processSignal": "SIGTERM",
+  "usage": {
+    "input": 26343,
+    "output": 7449,
+    "cacheRead": 100352,
+    "cacheWrite": 0,
+    "cost": 0,
+    "turns": 6
+  },
+  "model": "deepseek/deepseek-v4-pro:xhigh",
+  "attemptedModels": [
+    "opencode-go/glm-5.2:xhigh",
+    "deepseek/deepseek-v4-pro:xhigh"
+  ],
+  "modelAttempts": [
+    {
+      "model": "opencode-go/glm-5.2:xhigh",
+      "success": false,
+      "exitCode": 1,
+      "error": "429: {\"type\":\"GoUsageLimitError\",\"message\":\"Weekly usage limit reached. Resets in 7hr 5min. To continue using this model now, enable usage from your available balance: https://opencode.ai/workspace/wrk_01KM5YNB7DGPX5QF10G15BK1MD/go\"}",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "cost": 0,
+        "turns": 1
+      }
+    },
+    {
+      "model": "deepseek/deepseek-v4-pro:xhigh",
+      "success": true,
+      "exitCode": 0,
+      "usage": {
+        "input": 26343,
+        "output": 7449,
+        "cacheRead": 100352,
+        "cacheWrite": 0,
+        "cost": 0,
+        "turns": 5
+      }
+    }
+  ],
+  "durationMs": 125517,
+  "toolCount": 6,
+  "launchContractDigest": "4964746662a9f1d40c24401cd09f091ad0219cdc5355fb4489d35d9abdc9977f",
+  "launchResolvedExtensions": {
+    "version": 1,
+    "source": "launch-resolved",
+    "disableAmbientExtensions": false,
+    "runtime": [
+      "sha256:3c1d0f7dc40b23f3"
+    ],
+    "configured": [],
+    "effective": [
+      "sha256:3c1d0f7dc40b23f3"
+    ],
+    "omitted": {
+      "runtime": 0,
+      "configured": 0,
+      "effective": 0
+    }
+  },
+  "acceptance": {
+    "status": "checked",
+    "evidenceStatus": "checked",
+    "explicit": false,
+    "effectiveAcceptance": {
+      "level": "checked",
+      "explicit": false,
+      "inferredReason": [
+        "write-capable worker/task"
+      ],
+      "criteria": [
+        {
+          "id": "criterion-1",
+          "must": "Implement the requested change without widening scope",
+          "evidence": [
+            "changed-files",
+            "tests-added",
+            "commands-run",
+            "residual-risks",
+            "no-staged-files"
+          ],
+          "severity": "required"
+        }
+      ],
+      "evidence": [
+        "changed-files",
+        "tests-added",
+        "commands-run",
+        "residual-risks",
+        "no-staged-files"
+      ],
+      "verify": [],
+      "stopRules": []
+    },
+    "inferredReason": [
+      "write-capable worker/task"
+    ],
+    "criteria": [
+      {
+        "id": "criterion-1",
+        "must": "Implement the requested change without widening scope",
+        "evidence": [
+          "changed-files",
+          "tests-added",
+          "commands-run",
+          "residual-risks",
+          "no-staged-files"
+        ],
+        "severity": "required"
+      }
+    ],
+    "runtimeChecks": [
+      {
+        "id": "criterion:criterion-1",
+        "status": "passed",
+        "message": "Required criterion 'criterion-1' satisfied."
+      },
+      {
+        "id": "evidence:changed-files",
+        "status": "not-applicable",
+        "message": "changed-files evidence explicitly reported as not applicable."
+      },
+      {
+        "id": "evidence:tests-added",
+        "status": "not-applicable",
+        "message": "tests-added evidence explicitly reported as not applicable."
+      },
+      {
+        "id": "evidence:commands-run",
+        "status": "passed",
+        "message": "commands-run evidence present."
+      },
+      {
+        "id": "evidence:residual-risks",
+        "status": "passed",
+        "message": "residual-risks evidence present."
+      },
+      {
+        "id": "evidence:no-staged-files",
+        "status": "passed",
+        "message": "no-staged-files evidence present."
+      },
+      {
+        "id": "no-staged-files",
+        "status": "passed",
+        "message": "No staged files detected."
+      }
+    ],
+    "verifyRuns": [],
+    "childReport": {
+      "criteriaSatisfied": [
+        {
+          "id": "criterion-1",
+          "status": "satisfied",
+          "evidence": "Read-only review: compared internal/tui/tui.go (405 lines) + tui_test.go (173 lines) against interactive-cli-design.md §1-5. No code written, no scope widened."
+        }
+      ],
+      "changedFiles": [],
+      "testsAddedOrUpdated": [],
+      "commandsRun": [
+        {
+          "command": "go test ./internal/tui/ -v -count=1",
+          "result": "passed",
+          "summary": "8/8 existing tests pass; confirms current coverage baseline"
+        }
+      ],
+      "validationOutput": [
+        "P0: 12 mandatory gaps (filter edit keys, n/N search nav, ? help, NO_COLOR)",
+        "P1: 6 interface gaps (position indicator, b pageup, space confirm, highlight, color-blind, ctrl+d)",
+        "P2: 11 test gaps (all 10 §4.3 scenarios + non-interactive degradation)",
+        "Conforming: 26 items verified against spec"
+      ],
+      "residualRisks": [
+        "P0-1~7 filter edit keys: usability blocker — any typo requires backspace-to-beginning",
+        "P0-8/9 n/N: without match navigation, /-filter degrades to a simple grep, not true search",
+        "P0-11 ? help: users cannot discover o/s/r/find/refresh without reading source code"
+      ],
+      "noStagedFiles": true,
+      "diffSummary": "No diff — review-only",
+      "reviewFindings": [
+        "P0: tui.go:218-230 - filter input lacks all cursor-movement and edit keys beyond backspace",
+        "P0: tui.go:252 - n/N search navigation keys not bound",
+        "P0: tui.go:252 - ?/h help overlay not bound",
+        "P0: tui.go:309-311 - no-match message not shown for empty search results",
+        "P0: tui.go:25-53 - all lipgloss styles unconditional; NO_COLOR not honored in TUI mode",
+        "P1: tui.go:374 - reader lacks position indicator (line X-Y / total N)",
+        "P1: tui.go:232-247 - b (PageUp alternative) not bound in reader",
+        "P1: tui.go:393 - catColorIcon uses color-only dots, no symbols for color-blind users",
+        "P2: tui_test.go - only 8 model-level tests; no PTY tests, no CJK tests, no SIGWINCH tests"
+      ],
+      "manualNotes": "P0 filtering input is the most impactful gap — it's an actual text input field but has essentially zero editing capability. Recommend implementing a proper single-line editor (or reusing bl/Essen's input.go pattern, 384 lines zero-dep) before adding n/N search or ? help."
+    }
+  },
+  "effects": {
+    "fileMutation": {
+      "status": "not-applicable",
+      "expected": false,
+      "attempted": false
+    }
+  },
+  "transcriptPath": "/home/xieguiawu/Desktop/go-projects/news-report/.pi-subagents/artifacts/973e6457_momus_1_transcript.jsonl",
+  "skills": [
+    "graphify"
+  ],
+  "timestamp": 1785689865769
+}

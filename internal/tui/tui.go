@@ -57,9 +57,10 @@ const (
 
 // Model 是 TUI 根模型。
 type Model struct {
-	cfg     *config.Config
-	fetcher *fetch.Fetcher
-	opts    report.Options
+	cfg      *config.Config
+	fetcher  *fetch.Fetcher
+	opts     report.Options
+	showHelp bool
 
 	rep    *report.Report
 	cats   []classify.Category // Tab 顺序（配置分类 + other）
@@ -280,6 +281,9 @@ func (m Model) handleListKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "ctrl+c", "q":
 		return m, tea.Quit
+	case "?":
+		m.showHelp = !m.showHelp
+		return m, nil
 	case "tab", "right", "l":
 		if len(m.cats) > 0 {
 			m.tab = (m.tab + 1) % len(m.cats)
@@ -408,6 +412,9 @@ func (m Model) catCount(cat classify.Category) int {
 // ── View ─────────────────────────────────────────────────────
 
 func (m Model) View() string {
+	if m.showHelp {
+		return m.helpView()
+	}
 	if m.loading {
 		return styleTitle.Render("news-report") + "\n\n  正在抓取新闻…\n"
 	}
@@ -496,7 +503,14 @@ func (m Model) readerView() string {
 	sb.WriteString(styleDim.Render(fmt.Sprintf("%s · %s · %s ago · %s\n\n",
 		it.SourceName, strings.ToUpper(it.Lang), it.AgeLabel, it.URL)))
 	if m.reader.err != "" {
-		sb.WriteString(styleErr.Render(m.reader.err) + "\n")
+		errStr := m.reader.err
+		hint := ""
+		if strings.Contains(errStr, "403") || strings.Contains(errStr, "Forbidden") {
+			hint = "\n提示：按 o 在浏览器中打开原文"
+		} else if strings.Contains(errStr, "付费墙") || strings.Contains(errStr, "paywall") {
+			hint = "\n提示：试试 news-report find '标题' 找免费转载"
+		}
+		sb.WriteString(styleErr.Render(errStr+hint) + "\n")
 	}
 	if m.reader.body != "" {
 		// body 按 rune 切片，避免切断多字节 UTF-8（中文/德法变音）
@@ -509,7 +523,11 @@ func (m Model) readerView() string {
 		if end > len(runes) {
 			end = len(runes)
 		}
-		sb.WriteString(styleReader.Render(string(runes[start:end])))
+		visible := string(runes[start:end])
+		if m.width > 20 {
+			visible = wrapLines(visible, m.width-4)
+		}
+		sb.WriteString(styleReader.Render(visible))
 		sb.WriteString("\n")
 	}
 	sb.WriteString(styleHelp.Render("↑↓ 滚动  PgUp/PgDn 翻页  Home/End 首尾  Esc 返回  q 退出"))
@@ -549,6 +567,54 @@ func (r *readerState) scrollDown(n int) {
 			r.offset = max
 		}
 	}
+}
+
+// ── 帮助视图 ─────────────────────────────────────────────────
+
+func (m Model) helpView() string {
+	var sb strings.Builder
+	sb.WriteString(styleTitle.Render("键位帮助") + "\n\n")
+	for _, row := range [][2]string{
+		{"tab / h,l", "切换分类"},
+		{"up/down / j,k", "选择条目"},
+		{"Enter", "阅读全文"},
+		{"/", "搜索过滤（Esc 退出）"},
+		{"o", "浏览器打开当前条目"},
+		{"s", "导出当前分类 Markdown"},
+		{"r", "重新抓取"},
+		{"q", "退出"},
+		{"?", "本帮助"},
+		{"PgUp/PgDn / 空格/b", "阅读器翻页"},
+		{"Home/End", "阅读器首/尾"},
+	} {
+		sb.WriteString(fmt.Sprintf("  %-28s %s\n", styleCursor.Render(row[0]), row[1]))
+	}
+	sb.WriteString("\n按任意键返回\n")
+	return sb.String()
+}
+
+// wrapLines 将长行按指定宽度折行。
+func wrapLines(text string, width int) string {
+	if width < 10 {
+		return text
+	}
+	var sb strings.Builder
+	for _, line := range strings.Split(text, "\n") {
+		if len(line) <= width {
+			sb.WriteString(line)
+			sb.WriteByte('\n')
+			continue
+		}
+		rem := line
+		for len(rem) > width {
+			sb.WriteString(rem[:width])
+			sb.WriteByte('\n')
+			rem = rem[width:]
+		}
+		sb.WriteString(rem)
+		sb.WriteByte('\n')
+	}
+	return sb.String()
 }
 
 // ── 浏览器打开 ───────────────────────────────────────────────
