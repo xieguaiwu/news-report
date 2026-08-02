@@ -11,8 +11,11 @@ func TestDefaultConfig(t *testing.T) {
 	if c.Validate() != nil {
 		t.Fatalf("默认配置应合法: %v", c.Validate())
 	}
-	if len(c.Languages) != 3 {
-		t.Errorf("默认语言应为 3 种")
+	if len(c.Languages) != 4 {
+		t.Errorf("默认语言应为 4 种（en/de/fr/zh），实际 %v", c.Languages)
+	}
+	if len(c.Categories) != 4 || c.Categories[0] != "uspolitics" {
+		t.Errorf("默认分类应为 4 种且 uspolitics 在前，实际 %v", c.Categories)
 	}
 	if c.Minutes != 1440 {
 		t.Errorf("默认窗口应为 1440 分钟")

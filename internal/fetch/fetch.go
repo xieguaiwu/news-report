@@ -74,20 +74,26 @@ func New(opts Options) *Fetcher {
 
 // Bytes 获取 URL 内容（遵循重试与 robots 策略，使用默认 UA）。
 func (f *Fetcher) Bytes(ctx context.Context, rawURL string) ([]byte, error) {
-	return f.bytesWithUA(ctx, rawURL, f.opts.UserAgent)
+	return f.bytesWithUA(ctx, rawURL, f.opts.UserAgent, f.opts.NoRobots)
 }
 
 // BytesUA 获取 URL 内容，使用指定 UA（用于站点显式白名单的抓取，如 UN 的 Feedfetcher-Google）。
 func (f *Fetcher) BytesUA(ctx context.Context, rawURL, ua string) ([]byte, error) {
-	return f.bytesWithUA(ctx, rawURL, ua)
+	return f.bytesWithUA(ctx, rawURL, ua, f.opts.NoRobots)
 }
 
-func (f *Fetcher) bytesWithUA(ctx context.Context, rawURL, ua string) ([]byte, error) {
+// BytesNoRobots 获取 URL 内容，跳过 robots.txt 检查（用于版权声明明确许可个人用途的端点，
+// 如 Google News RSS：其版权声明允许"个人非商业用途的 feed reader"使用）。
+func (f *Fetcher) BytesNoRobots(ctx context.Context, rawURL, ua string) ([]byte, error) {
+	return f.bytesWithUA(ctx, rawURL, ua, true)
+}
+
+func (f *Fetcher) bytesWithUA(ctx context.Context, rawURL, ua string, noRobots bool) ([]byte, error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {
 		return nil, fmt.Errorf("非法 URL %q: %w", rawURL, err)
 	}
-	if !f.opts.NoRobots && u.Scheme != "" {
+	if !noRobots && u.Scheme != "" {
 		allowed, known := f.allowed(u, ua)
 		if known && !allowed {
 			return nil, fmt.Errorf("robots.txt 禁止抓取 %s", u.Path)

@@ -1,58 +1,85 @@
 # news-report — Western News Aggregator
 
-Automatically collects the latest news from **authoritative Western media** (English / German / French),
-focused on **international policy (politics) · economy & finance · industry & technology**.
+Automatically collects the latest news from **authoritative Western media** (English / German / French / Chinese),
+focused on **US politics · international policy · economy & finance · industry & technology**.
 
 [中文版](README.md)
 
 ## Highlights
 
-- **Curated source matrix (53 built-in sources) balancing breadth & depth**
+- **Curated source matrix (65+ built-in sources) balancing breadth & depth**
   - `wire`: Reuters, AP — fastest & broadest (weight 1.0)
-  - `legacy`: BBC, Guardian, NYT, WSJ, Washington Post, Le Monde, Le Figaro, FAZ, Die Zeit, Spiegel, Handelsblatt, Süddeutsche, DW, France 24…
-  - `specialist`: IMF, US Federal Reserve, ECB, UN News, EIA, Brookings, CFR, PIIE, CSIS, Chatham House, Politico EU, EURACTIV…
-  - Optional `--google-news` meta-source for extra breadth
-- **Trilingual classification**: politics / economy / industry keyword engine (en/de/fr word lists, multi-word phrases, negative filter for sports/entertainment)
+  - `legacy`: BBC, Guardian, NYT, WSJ, Washington Post, Le Monde, Le Figaro, FAZ, Die Zeit, Spiegel, Handelsblatt, Süddeutsche, DW, France 24, CNA (Taiwan), Liberty Times…
+  - `specialist`: IMF, US Federal Reserve, ECB, UN News, EIA, Brookings, CFR, PIIE, CSIS, Chatham House, Politico EU, EURACTIV, NPR Politics, Roll Call…
+- **Quadrilingual classification**: uspolitics / politics / economy / industry
+  - en/de/fr word lists + Chinese word list (traditional/simplified, substring matching)
+  - US-specific terms (senate/congress/white house/白宮…) get strong-signal weighting to separate US domestic politics from international policy
 - **Strong web acquisition**
-  - RSS 2.0 / Atom / RDF auto-detection; multiple candidate feeds per source
-  - HTML scrape fallback (goquery heuristics + selector + link-pattern filter)
-  - `read` subcommand: full-text extraction via go-readability with fallback
-  - gzip, redirects, exponential-backoff retry (never on 4xx), configurable UA, robots.txt honored per UA group (supports site whitelists e.g. UN's Feedfetcher-Google)
-- **Smart dedup**: normalized titles + Jaccard similarity clustering (language-aware threshold)
-- **Freshness ranking**: source weight × exponential decay (configurable half-life) + relevance bonus
-- **Seen-store**: JSON cache, re-runs only report new items; `--show-seen` to review
-- **Three outputs**: color terminal / Markdown report (with collapsible full-text excerpts & source stats) / JSON
-- **Depth mode**: `--fulltext N` fetches full text of top-N items per category
+  - RSS 2.0 / Atom / RDF auto-detection (UTF-8 BOM stripped); multiple candidate feeds per source
+  - HTML scrape fallback (goquery + selector + link-pattern filter)
+  - `read` subcommand: go-readability full-text extraction + **paywall detection**
+  - gzip, redirects, backoff retry (never on 4xx), configurable UA, per-UA-group robots.txt
+- **Paywall workaround**: `find "<title>"` searches Google News for free reprints/mirrors (with source-domain markers)
+- **Interactive TUI**: `ui` subcommand — category tabs, keyboard navigation, in-terminal full-text reading, browser open, search filter, Markdown export
+- **Smart dedup**: normalized titles + Jaccard clustering (language-aware threshold)
+- **Freshness ranking**: source weight × exponential decay + relevance bonus
+- **Seen-store**: JSON cache; re-runs only report new items
+- **Three outputs**: color terminal / Markdown / JSON
 
 ## Quick Start
 
 ```bash
 make build
-news-report                            # last 24h, all languages & categories
+news-report                              # last 24h, all languages & categories
+news-report ui                           # interactive TUI
+news-report read <url> --lang de         # deep-read a single article
+news-report find "EU sanctions Russia"   # find free reprints of paywalled articles
 news-report --out markdown --outfile report.md
-news-report --strict                   # only focused categories (hide "other")
-news-report --lang de,fr --cat economy
-news-report --fulltext 3               # fetch full text of top-3 per category
-news-report read <url> --lang fr       # deep-read a single article
-news-report sources --live             # probe all source feeds
-news-report init                       # write default config
+news-report --lang zh,en --cat uspolitics
+news-report --fulltext 3
+news-report sources --live
+news-report init
 ```
+
+## TUI Keys
+
+| Key | Action |
+|---|---|
+| `←`/`→` or `Tab` | switch category |
+| `↑`/`↓` or `j`/`k` | move selection |
+| `Enter` | fetch & read full text (`Esc` back) |
+| `o` | open in browser |
+| `/` | filter by title/source |
+| `s` | export current category as Markdown |
+| `r` | re-fetch |
+| `q`/`Ctrl+C` | quit |
+
+## Paywall & Reprints
+
+Soft-paywalled sources: NYT / WSJ / Economist / FAZ / Handelsblatt (partial). RSS summaries are free.
+
+```bash
+news-report read <url>            # auto-detects paywall and hints
+news-report find "title keywords" # Google News reprint/mirror candidates with domains
+```
+
+Free full-text sources: AP, BBC, Guardian, DW, Le Monde (mostly), France 24, UN, IMF, Fed, ECB, Brookings, NPR, Roll Call, CNA, Liberty Times, etc.
 
 ## Configuration
 
 `~/.config/news-report/config.yaml` (generated by `news-report init`):
 
 ```yaml
-languages: [en, de, fr]
-categories: [politics, economy, industry]
-minutes: 1440                  # freshness window (minutes)
+languages: [en, de, fr, zh]
+categories: [uspolitics, politics, economy, industry]
+minutes: 1440
 limit_per_category: 12
 total_limit: 80
 concurrency: 12
 timeout_seconds: 15
 retries: 2
 halflife_hours: 12
-proxy: ""                      # empty = env vars (HTTP_PROXY etc.)
+proxy: ""
 cache_dir: ~/.cache/news-report
 store_days: 7
 show_seen: false
@@ -64,18 +91,20 @@ sources:
   bbc-world:
     enabled: true
     weight: 0.9
-    # feeds: [custom feed URLs]
 ```
 
 ## Compliance
 
 - Honors robots.txt by default (per-UA groups, 24h cache); `--no-robots` disables
-- Timeouts + backoff + concurrency caps; only public feeds/pages, never bypasses paywalls
+- Google News RSS endpoint used per its license ("personal, non-commercial use in a personal feed reader")
+- Timeouts + backoff + concurrency caps; public feeds/pages only, no paywall bypass
 - FT & Bloomberg excluded (paywalled/no public feeds)
 
 ## Tests
 
 ```bash
-make test    # offline unit tests (feed parsing, classification, dedup, robots, pipeline)
-make smoke   # live network smoke test
+make test    # 14 packages offline (with -race): feed/classify/dedup/robots/pipeline/TUI/gnews
+make smoke   # live network smoke
 ```
+
+Full source table & status: [docs/SOURCES.md](docs/SOURCES.md) · Architecture: [DEVELOPMENT.md](DEVELOPMENT.md)

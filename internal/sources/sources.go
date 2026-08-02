@@ -111,6 +111,12 @@ func Defaults() []Source {
 		src("economist-finance", "The Economist Finance", "en", TierLegacy, true,
 			"https://www.economist.com/finance-and-economics/rss.xml"),
 		// ── EN · 政策/产业深度 (specialist) ────────────────────
+		src("npr-politics", "NPR Politics", "en", TierSpecialist, false,
+			"https://feeds.npr.org/1014/rss.xml"),
+		src("rollcall", "Roll Call", "en", TierSpecialist, false,
+			"https://rollcall.com/feed/"), // 注意：非 www 域名
+		src("abc-news", "ABC News Top Stories", "en", TierSpecialist, true,
+			"https://abcnews.go.com/abcnews/topstories"), // 综合头条，非纯政治
 		src("politico-eu", "Politico Europe", "en", TierSpecialist, true,
 			"https://www.politico.eu/feed/"), // Cloudflare 反爬，可能 403（代理 IP 信誉），属预期失败
 		src("euractiv", "EURACTIV", "en", TierSpecialist, true,
@@ -208,6 +214,22 @@ func Defaults() []Source {
 			"https://www.lepoint.fr/rss.xml"),
 		src("franceinfo", "franceinfo", "fr", TierLegacy, true,
 			"https://www.francetvinfo.fr/rss/"),
+
+		// ── ZH · 台湾媒体 (legacy) ─────────────────────────────
+		src("cna-politics", "中央社 兩岸/政治", "zh", TierLegacy, false,
+			"https://feeds.feedburner.com/rsscna/politics"),
+		src("cna-world", "中央社 國際", "zh", TierLegacy, false,
+			"https://feeds.feedburner.com/rsscna/intworld"),
+		src("cna-mainland", "中央社 兩岸/大陸", "zh", TierLegacy, true,
+			"https://feeds.feedburner.com/rsscna/mainland"),
+		src("cna-finance", "中央社 財經", "zh", TierLegacy, false,
+			"https://feeds.feedburner.com/rsscna/finance"),
+		src("ltn-politics", "自由時報 政治", "zh", TierLegacy, true,
+			"https://news.ltn.com.tw/rss/politics.xml"),
+		src("ltn-world", "自由時報 國際", "zh", TierLegacy, true,
+			"https://news.ltn.com.tw/rss/world.xml"),
+		src("ltn-business", "自由時報 財經", "zh", TierLegacy, true,
+			"https://news.ltn.com.tw/rss/business.xml"),
 	}
 	sort.SliceStable(list, func(i, j int) bool {
 		if list[i].Lang != list[j].Lang {

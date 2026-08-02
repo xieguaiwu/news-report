@@ -27,8 +27,8 @@ type SourceOverride struct {
 
 // Config 是完整运行配置。yaml.v3 反序列化时只覆盖文件中出现的字段。
 type Config struct {
-	Languages   []string                  `yaml:"languages"`  // en / de / fr
-	Categories  []string                  `yaml:"categories"` // politics / economy / industry
+	Languages   []string                  `yaml:"languages"`  // en / de / fr / zh
+	Categories  []string                  `yaml:"categories"` // uspolitics / politics / economy / industry
 	Minutes     int                       `yaml:"minutes"`    // 新鲜度窗口（分钟），0 = 不限窗口
 	LimitPerCat int                       `yaml:"limit_per_category"`
 	TotalLimit  int                       `yaml:"total_limit"`
@@ -52,8 +52,8 @@ type Config struct {
 // Default 返回内置默认配置。所有字段均有合理值，保证开箱即用。
 func Default() *Config {
 	return &Config{
-		Languages:   []string{"en", "de", "fr"},
-		Categories:  []string{"politics", "economy", "industry"},
+		Languages:   []string{"en", "de", "fr", "zh"},
+		Categories:  []string{"uspolitics", "politics", "economy", "industry"},
 		Minutes:     1440, // 24 小时
 		LimitPerCat: 12,
 		TotalLimit:  80,
@@ -148,9 +148,9 @@ func (c *Config) Validate() error {
 	}
 	for _, l := range c.Languages {
 		switch l {
-		case "en", "de", "fr":
+		case "en", "de", "fr", "zh":
 		default:
-			return fmt.Errorf("不支持的语言 %q（仅支持 en/de/fr）", l)
+			return fmt.Errorf("不支持的语言 %q（仅支持 en/de/fr/zh）", l)
 		}
 	}
 	if len(c.Categories) == 0 {
@@ -158,9 +158,9 @@ func (c *Config) Validate() error {
 	}
 	for _, cat := range c.Categories {
 		switch cat {
-		case "politics", "economy", "industry":
+		case "uspolitics", "politics", "economy", "industry":
 		default:
-			return fmt.Errorf("不支持的分类 %q（仅支持 politics/economy/industry）", cat)
+			return fmt.Errorf("不支持的分类 %q（仅支持 uspolitics/politics/economy/industry）", cat)
 		}
 	}
 	if c.TimeoutSec <= 0 {

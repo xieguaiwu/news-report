@@ -124,6 +124,9 @@ func TestParseDateVariants(t *testing.T) {
 		{"Tue, 01 Aug 2026 09:00:00 CEST", time.Date(2026, 8, 1, 7, 0, 0, 0, time.UTC)},  // CEST=UTC+2 → 07:00 UTC
 		{"Fri, 31 Jul 2026 18:00:00 JST", time.Date(2026, 7, 31, 9, 0, 0, 0, time.UTC)},  // JST=UTC+9
 		{"Mon, 01 Aug 2026 12:00:00 WEST", time.Date(2026, 8, 1, 12, 0, 0, 0, time.UTC)}, // 未收录缩写 → 按 UTC
+		{"2026/8/3 09:30", time.Date(2026, 8, 3, 9, 30, 0, 0, time.UTC)},                 // 中文/东亚格式
+		{"2026年8月3日 09:30", time.Date(2026, 8, 3, 9, 30, 0, 0, time.UTC)},
+		{"2026-8-3 09:30:00", time.Date(2026, 8, 3, 9, 30, 0, 0, time.UTC)},
 		{"", time.Time{}},
 		{"not a date", time.Time{}},
 	}
@@ -141,6 +144,35 @@ func TestParseDateVariants(t *testing.T) {
 	}
 }
 
+func TestParseBOM(t *testing.T) {
+	// 部分台湾 feed 以 UTF-8 BOM 开头
+	xml := "\xef\xbb\xbf<?xml version=\"1.0\"?><rss version=\"2.0\"><channel>" +
+		"<item><title>測試新聞</title><link>https://example.com/1</link></item>" +
+		"</channel></rss>"
+	items, err := Parse([]byte(xml))
+	if err != nil {
+		t.Fatalf("BOM feed 解析失败: %v", err)
+	}
+	if len(items) != 1 || items[0].Title != "測試新聞" {
+		t.Errorf("BOM 剥离失败: %+v", items)
+	}
+}
+
+func TestParseSourceElement(t *testing.T) {
+	xml := `<rss version="2.0"><channel><item>
+<title>EU sanctions - Reuters</title>
+<link>https://news.google.com/rss/articles/x</link>
+<source url="https://www.reuters.com">Reuters</source>
+</item></channel></rss>`
+	items, err := Parse([]byte(xml))
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	if items[0].SourceName != "Reuters" || items[0].SourceURL != "https://www.reuters.com" {
+		t.Errorf("source 元素解析失败: %q / %q", items[0].SourceName, items[0].SourceURL)
+	}
+}
+
 func TestParseGarbage(t *testing.T) {
 	if _, err := Parse([]byte("<html><body>not a feed</body></html>")); err == nil {
 		t.Error("垃圾输入应报错")
@@ -148,9 +180,13 @@ func TestParseGarbage(t *testing.T) {
 	if _, err := Parse([]byte("")); err == nil {
 		t.Error("空输入应报错")
 	}
+	if _, err := Parse([]byte("\xef\xbb\xbf")); err == nil {
+		t.Error("仅 BOM 应报错")
+	}
 }
 
 func TestParseXMLNamespaceCDATA(t *testing.T) {
+
 	xml := `<rss version="2.0"><channel><item>
 <title><![CDATA[France unveils <strong>industrial</strong> plan]]></title>
 <link>https://example.com/fr</link>

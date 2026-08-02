@@ -11,10 +11,12 @@ import (
 func init() {
 	for lang, ks := range sets {
 		ks.politics = normList(ks.politics)
+		ks.uspolitics = normList(ks.uspolitics)
 		ks.economy = normList(ks.economy)
 		ks.industry = normList(ks.industry)
 		ks.negative = normList(ks.negative)
 		ks.multiPolitics = normList(ks.multiPolitics)
+		ks.multiUSPolitics = normList(ks.multiUSPolitics)
 		ks.multiEconomy = normList(ks.multiEconomy)
 		ks.multiIndustry = normList(ks.multiIndustry)
 		ks.multiNegative = normList(ks.multiNegative)
@@ -34,36 +36,46 @@ func normList(list []string) []string {
 type Category string
 
 const (
-	Politics Category = "politics"
-	Economy  Category = "economy"
-	Industry Category = "industry"
-	Other    Category = "other"
+	USPolitics Category = "uspolitics" // 美国本国政治
+	Politics   Category = "politics"   // 国际政策
+	Economy    Category = "economy"    // 经济金融
+	Industry   Category = "industry"   // 产业发展
+	Other      Category = "other"
 )
 
 // All 是全部专注分类（用于 CLI 校验与默认过滤）。
-var All = []Category{Politics, Economy, Industry}
+var All = []Category{USPolitics, Politics, Economy, Industry}
 
 // keywordSet 一组分类词表。
 type keywordSet struct {
-	politics []string // 单 token
-	economy  []string
-	industry []string
-	negative []string
+	politics   []string // 单 token
+	uspolitics []string
+	economy    []string
+	industry   []string
+	negative   []string
 	// 多词短语（直接对原文做子串匹配）
-	multiPolitics []string
-	multiEconomy  []string
-	multiIndustry []string
-	multiNegative []string
+	multiPolitics   []string
+	multiUSPolitics []string
+	multiEconomy    []string
+	multiIndustry   []string
+	multiNegative   []string
 }
 
 var sets = map[string]keywordSet{
 	"en": {
+		uspolitics: []string{
+			"congress", "congressional", "senate", "senator", "senators",
+			"governor", "governors", "midterms", "midterm", "primary", "primaries",
+			"republican", "republicans", "democrat", "democrats", "gop", "capitol",
+			"impeachment", "impeach", "federal", "whitehouse", "biden", "trump",
+			"harris", "vance", "houseofrepresentatives",
+		},
 		politics: []string{
 			"policy", "policies", "government", "parliament", "election", "elections",
 			"summit", "sanctions", "sanction", "diplomacy", "diplomatic", "minister",
 			"ministry", "nato", "eu", "unitednations", "treaty", "tariff", "tariffs",
 			"geopolitical", "geopolitics", "president", "prime", "chancellor",
-			"congress", "senate", "lawmaker", "lawmakers", "legislation", "bill",
+			"lawmaker", "lawmakers", "legislation", "bill",
 			"foreign", "ambassador", "referendum", "coalition", "cabinet",
 			"europeancommission", "bilateral", "multilateral", "embargo",
 			"defense", "defence", "military", "ceasefire", "peace", "negotiation",
@@ -111,6 +123,12 @@ var sets = map[string]keywordSet{
 			"government shutdown", "executive order", "election campaign",
 			"voting", "ballot", "diplomatic relations", "political crisis",
 		},
+		multiUSPolitics: []string{
+			"white house", "supreme court", "attorney general", "justice department",
+			"midterm elections", "primary elections", "state legislature",
+			"house of representatives", "governor race", "senate race",
+			"congressional hearing", "election denier",
+		},
 		multiEconomy: []string{
 			"central bank", "interest rate", "interest rates", "gross domestic product",
 			"consumer prices", "inflation rate", "economic growth", "fiscal policy",
@@ -135,6 +153,10 @@ var sets = map[string]keywordSet{
 		},
 	},
 	"de": {
+		uspolitics: []string{
+			"senat", "kongress", "trump", "biden", "gouverneur",
+			"republikaner", "demokraten", "wahlkampf", "präsidentschaftswahl",
+		},
 		politics: []string{
 			"politik", "regierung", "parlament", "wahl", "wahlen", "gipfel",
 			"sanktionen", "sanktion", "diplomatie", "diplomatisch", "minister",
@@ -183,6 +205,11 @@ var sets = map[string]keywordSet{
 			"vereinte nationen", "sicherheitsrat", "geplante gesetzesänderung",
 			"regierungskrise", "koalitionsverhandlungen",
 		},
+		multiUSPolitics: []string{
+			"weißes haus", "weisses haus", "us-kongress", "us-senat",
+			"oberster gerichtshof", "justizministerium", "mittelfristige wahlen",
+			"us-präsident", "us-präsidenten", "us-regierung", "us-wahl", "us-wahlen",
+		},
 		multiEconomy: []string{
 			"europäische zentralbank", "leitzins", "leitzinsen", "bruttoinlandsprodukt",
 			"verbraucherpreise", "inflationstate", "wirtschaftswachstum",
@@ -204,6 +231,10 @@ var sets = map[string]keywordSet{
 		},
 	},
 	"fr": {
+		uspolitics: []string{
+			"congrès", "sénat", "trump", "biden", "gouverneur",
+			"républicains", "démocrates", "midterms",
+		},
 		politics: []string{
 			"politique", "politiques", "gouvernement", "parlement", "élection",
 			"élections", "election", "sommets", "sommet", "sanctions", "sanction",
@@ -253,6 +284,10 @@ var sets = map[string]keywordSet{
 			"négociations de paix", "union européenne", "nations unies",
 			"commission européenne", "crise politique",
 		},
+		multiUSPolitics: []string{
+			"maison blanche", "congrès américain", "sénat américain",
+			"cour suprême", "ministère de la justice", "élections de mi-mandat",
+		},
 		multiEconomy: []string{
 			"banque centrale", "taux d'intérêt", "taux d'intérêts", "produit intérieur brut",
 			"prix à la consommation", "croissance économique", "politique budgétaire",
@@ -272,6 +307,74 @@ var sets = map[string]keywordSet{
 		multiNegative: []string{
 			"actualités sportives", "résultats de match", "critique de film",
 			"critique musicale", "actualité people", "audiences tv", "prévisions météo",
+		},
+	},
+
+	// zh（繁体为主，含简体变体）：中文无空格，按子串匹配
+	"zh": {
+		uspolitics: []string{
+			"白宮", "白宫", "參議院", "参议院", "眾議院", "众议院", "最高法院",
+			"聯邦", "联邦", "州長", "州长", "共和黨", "共和党", "民主黨", "民主党",
+			"彈劾", "弹劾", "期中選舉", "中期选举", "初選", "初选", "川普", "特朗普", "拜登",
+			"州議會", "州议会", "國會山", "国会山",
+		},
+		politics: []string{
+			"外交", "國際", "国际", "政策", "政府", "總統", "总统", "國會", "国会",
+			"議會", "议会", "選舉", "选举", "制裁", "峰會", "峰会", "條約", "条约",
+			"關稅", "关税", "部長", "部长", "聯合國", "联合国", "北約", "北约", "歐盟", "欧盟",
+			"大使", "談判", "谈判", "停火", "戰爭", "战争", "衝突", "冲突", "軍事", "军事",
+			"移民", "難民", "难民", "邊境", "边境", "國防", "国防", "協議", "协议",
+			"公投", "內閣", "内阁", "貿易戰", "贸易战", "地緣政治", "地缘政治", "武器",
+			"飛彈", "导弹", "空襲", "空袭", "情報", "情报", "大使館", "使馆",
+		},
+		economy: []string{
+			"經濟", "经济", "財經", "财经", "通膨", "通貨膨脹", "通货膨胀", "利率",
+			"央行", "聯準會", "美联储", "貨幣", "货币", "財政", "财政", "赤字", "債務",
+			"债务", "衰退", "成長", "增长", "失業", "失业", "就業", "就业", "市場", "市场",
+			"股市", "債市", "汇率", "匯率", "貿易", "贸易", "出口", "進口", "进口", "銀行",
+			"银行", "預算", "预算", "稅", "税", "投資", "投资", "金融", "復甦", "复苏",
+			"放緩", "放缓", "升息", "降息", "國債", "国债", "房市", "物價", "物价",
+			"薪資", "薪资", "薪資成長", "稅收", "税收",
+		},
+		industry: []string{
+			"產業", "产业", "工業", "工业", "製造", "制造", "半導體", "半导体", "晶片",
+			"芯片", "供應鏈", "供应链", "能源", "石油", "天然氣", "天然气", "電力", "电力",
+			"再生能源", "可再生能源", "太陽能", "太阳能", "風電", "风电", "核電", "核电",
+			"電動車", "电动车", "汽車", "汽车", "鋼鐵", "钢铁", "鋁", "铝", "電池", "电池",
+			"鋰", "锂", "稀土", "製藥", "制药", "生技", "航太", "航天", "造船", "化學",
+			"化学", "基礎設施", "基础设施", "人工智慧", "人工智能", "科技", "電信", "电信",
+			"5G", "綠能", "绿能", "減碳", "减碳", "碳", "氫能", "氢能", "採礦", "采矿",
+			"原物料", "原材料", "產能", "产能", "缺貨", "短缺", "晶圓", "晶圆",
+			"台積電", "台积电", "輝達", "辉达", "面板", "鋼材", "钢材", "石化",
+			"油價", "油价", "原油", "頁岩", "页岩", "煉油", "炼油",
+		},
+		negative: []string{
+			"體育", "体育", "足球", "棒球", "籃球", "篮球", "網球", "网球", "高爾夫", "高尔夫",
+			"奧運", "奥运", "世界盃", "世界杯", "娛樂", "娱乐", "電影", "电影", "影劇", "影剧",
+			"音樂", "音乐", "演唱會", "演唱会", "時尚", "时尚", "婚禮", "婚礼", "食譜", "食谱",
+			"天氣", "天气", "星座", "謎題", "谜题", "測驗", "测验", "八卦", "寵物", "宠物",
+			"旅遊", "旅游", "明星", "藝人", "艺人", "綜藝", "综艺", "偶像劇",
+		},
+		multiPolitics: []string{
+			"兩岸關係", "两岸关系", "雙邊關係", "外交政策", "聯合國安理會", "聯合國大會",
+			"和平談判", "和平協議", "貿易談判", "政黨輪替", "內閣改組", "外交使節",
+		},
+		multiUSPolitics: []string{
+			"美國國會", "美国国会", "美國參議院", "美國眾議院", "國務卿", "国务卿",
+			"司法部", "聯邦調查局", "聯邦最高法院", "總統大選", "美國總統",
+		},
+		multiEconomy: []string{
+			"中央銀行", "中央银行", "利率決策", "貨幣政策", "財政政策", "量化寬鬆",
+			"貿易逆差", "貿易順差", "貿易赤字", "國民生產總值", "生產毛額", "消費者物價",
+			"經濟成長", "經濟衰退", "失業率", "就業市場", "房地產市場", "公債殖利率",
+		},
+		multiIndustry: []string{
+			"供應鏈重整", "產業政策", "工業生產", "先進製程", "晶圓代工", "電動車電池",
+			"綠色能源", "再生能源", "碳排放", "能源轉型", "離岸風電", "半導體產業",
+		},
+		multiNegative: []string{
+			"體育新聞", "體育賽事", "賽事報導", "電影評論", "音樂評論", "娛樂新聞",
+			"綜藝節目", "偶像劇", "旅遊攻略", "天氣預報",
 		},
 	},
 }
@@ -317,11 +420,15 @@ func Classify(lang, title, summary string) Result {
 	}
 
 	tokens := tokenize(text)
+	textLower := strings.ToLower(text)
 
-	var pol, eco, ind, neg int
+	var pol, us, eco, ind, neg int
 	for tok, n := range tokens {
 		if contains(ks.politics, tok) {
 			pol += n
+		}
+		if contains(ks.uspolitics, tok) {
+			us += n * 2 // US 机构/人物词是强信号（senate/congress/trump 几乎不出现于他国语境）
 		}
 		if contains(ks.economy, tok) {
 			eco += n
@@ -333,10 +440,44 @@ func Classify(lang, title, summary string) Result {
 			neg += n
 		}
 	}
+	// 中文（zh）：无空格语言，token 化会失败，改用子串匹配（词表均为 2+ 字短语）
+	if lang == "zh" {
+		pol, us, eco, ind, neg = 0, 0, 0, 0, 0
+		for _, kw := range ks.politics {
+			if strings.Contains(textLower, kw) {
+				pol++
+			}
+		}
+		for _, kw := range ks.uspolitics {
+			if strings.Contains(textLower, kw) {
+				us += 2
+			}
+		}
+		for _, kw := range ks.economy {
+			if strings.Contains(textLower, kw) {
+				eco++
+			}
+		}
+		for _, kw := range ks.industry {
+			if strings.Contains(textLower, kw) {
+				ind++
+			}
+		}
+		for _, kw := range ks.negative {
+			if strings.Contains(textLower, kw) {
+				neg++
+			}
+		}
+	}
 	// 多词短语
 	for _, p := range ks.multiPolitics {
 		if strings.Contains(text, p) {
 			pol += 2
+		}
+	}
+	for _, p := range ks.multiUSPolitics {
+		if strings.Contains(text, p) {
+			us += 4
 		}
 	}
 	for _, p := range ks.multiEconomy {
@@ -361,13 +502,14 @@ func Classify(lang, title, summary string) Result {
 		cat Category
 		sc  int
 	}{
-		{Politics, pol}, {Economy, eco}, {Industry, ind},
+		// uspolitics 优先：US 专属词命中更多时才归类（避免抢走一般国际政治）
+		{USPolitics, us}, {Politics, pol}, {Economy, eco}, {Industry, ind},
 	} {
 		if c.sc > bestScore {
 			best, bestScore = c.cat, c.sc
 		}
 	}
-	total := pol + eco + ind
+	total := pol + eco + ind + us
 	conf := 0.0
 	if total > 0 {
 		conf = float64(bestScore) / float64(total)

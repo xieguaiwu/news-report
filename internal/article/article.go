@@ -69,6 +69,10 @@ func Extract(ctx context.Context, f *fetch.Fetcher, rawURL, lang string) (*Artic
 	// 回退：goquery 启发式
 	text := fallbackExtract(html)
 	if len(strings.TrimSpace(text)) < 100 {
+		// 提取不到正文：可能是付费墙（常见于 NYT/WSJ/Economist/Handelsblatt 等软墙）
+		if looksPaywalled(html) {
+			return nil, ErrPaywall
+		}
 		return nil, errNoContent
 	}
 	title := fallbackTitle(html)
@@ -87,7 +91,33 @@ func (e statusError) Error() string { return "HTTP " + itoa(int(e)) }
 
 func errHTTP(code int) error { return statusError(code) }
 
+// ErrPaywall 表示文章被付费墙拦截（订阅/注册才能阅读全文）。
+var ErrPaywall = errString("该文章可能被付费墙拦截——试试 news-report find '<标题关键词>' 找免费转载")
+
 var errNoContent = errString("无法提取正文（页面为空或需要登录）")
+
+// looksPaywalled 启发式检测付费墙：提取失败 + 页面存在付费特征标记。
+var paywallMarkers = []string{
+	"class=\"paywall", "data-paywall", "window.paywall", "isPaywall",
+	"registration-wall", "registration_required", "subscriber-only", "subscriber only",
+	"metered", "article locked", "access denied", "free articles left",
+	"premium article", "premium content", "subscribe to read", "login to read",
+	"register to read", "continue reading with subscription",
+}
+
+func looksPaywalled(html string) bool {
+	lower := strings.ToLower(html)
+	if len(lower) > 400<<10 {
+		lower = lower[:400<<10] // 只看前 400KB（页面头部特征最密集）
+	}
+	hits := 0
+	for _, m := range paywallMarkers {
+		if strings.Contains(lower, m) {
+			hits++
+		}
+	}
+	return hits >= 2
+}
 
 type errString string
 

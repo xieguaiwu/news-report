@@ -1,0 +1,166 @@
+{
+  "runId": "547c1073",
+  "agent": "librarian",
+  "task": "验证以下 RSS feed URL 是否真实可用（用 curl -s -A 'Mozilla/5.0' -o /dev/null -w '%{http_code} %{content_type}' 逐个检查，网络代理可用：环境变量 HTTP_PROXY 已设）。目标是给一个新闻聚合器添加台湾中文媒体与美国政治媒体源，需要找到当前实际可用的 feed URL。逐个测试并输出表格：URL | HTTP状态 | content-type | 是否有条目（可 curl 前 500 字节看是否 XML）。\n\n台湾媒体（zh）:\n1. 中央社 CNA 国际/两岸 RSS: https://www.cna.com.tw/rss/aipl.xml（试这个和其他可能的路径 https://www.cna.com.tw/rss/ 目录下 firstnews.xml / world.xml / finance.xml 等）\n2. 中央广播电台 RTI: https://www.rti.org.tw/rss/ 或 https://www.rti.org.tw/rss/aipl 等（探查目录）\n3. 联合报/自由时报/工商时报 是否有 RSS（探查常见路径 /rss.xml、/rss 等，不强制）\n\n美国政治（uspolitics）:\n4. NPR Politics: https://feeds.npr.org/1014/rss.xml\n5. Roll Call: https://rollcall.com/feed/ 或 https://www.rollcall.com/feed/\n6. Politico US Politics: https://www.politico.com/rss/politics.xml 或 https://www.politico.com/feed\n7. AP US politics hub: https://apnews.com/hub/politics/feed 或 https://apnews.com/politics/feed\n8. Axios: https://axios.com/feed 或 https://www.axios.com/feed\n9. ABC News Politics: https://abcnews.go.com/abcnews/topstories 或 politics RSS（探查）\n\n最后给结论：哪些可用（给出确切 URL）、哪些不可用。中文输出，简洁表格。",
+  "exitCode": 0,
+  "processSignal": "SIGTERM",
+  "usage": {
+    "input": 17534,
+    "output": 11771,
+    "cacheRead": 178304,
+    "cacheWrite": 0,
+    "cost": 0,
+    "turns": 12
+  },
+  "model": "deepseek/deepseek-v4-flash:medium",
+  "attemptedModels": [
+    "deepseek/deepseek-v4-flash:medium"
+  ],
+  "modelAttempts": [
+    {
+      "model": "deepseek/deepseek-v4-flash:medium",
+      "success": true,
+      "exitCode": 0,
+      "usage": {
+        "input": 17534,
+        "output": 11771,
+        "cacheRead": 178304,
+        "cacheWrite": 0,
+        "cost": 0,
+        "turns": 12
+      }
+    }
+  ],
+  "durationMs": 176708,
+  "toolCount": 17,
+  "launchContractDigest": "b52973eacbac34b382b9538ffc34116ad60e2ca24e0e6a6af6823481d3b4164e",
+  "launchResolvedExtensions": {
+    "version": 1,
+    "source": "launch-resolved",
+    "disableAmbientExtensions": false,
+    "runtime": [
+      "sha256:3c1d0f7dc40b23f3"
+    ],
+    "configured": [],
+    "effective": [
+      "sha256:3c1d0f7dc40b23f3"
+    ],
+    "omitted": {
+      "runtime": 0,
+      "configured": 0,
+      "effective": 0
+    }
+  },
+  "acceptance": {
+    "status": "attested",
+    "evidenceStatus": "attested",
+    "explicit": false,
+    "effectiveAcceptance": {
+      "level": "attested",
+      "explicit": false,
+      "inferredReason": [
+        "default lightweight attestation"
+      ],
+      "criteria": [
+        {
+          "id": "criterion-1",
+          "must": "Return a concise result and residual risks when applicable",
+          "evidence": [
+            "manual-notes",
+            "residual-risks"
+          ],
+          "severity": "required"
+        }
+      ],
+      "evidence": [
+        "manual-notes",
+        "residual-risks"
+      ],
+      "verify": [],
+      "stopRules": []
+    },
+    "inferredReason": [
+      "default lightweight attestation"
+    ],
+    "criteria": [
+      {
+        "id": "criterion-1",
+        "must": "Return a concise result and residual risks when applicable",
+        "evidence": [
+          "manual-notes",
+          "residual-risks"
+        ],
+        "severity": "required"
+      }
+    ],
+    "runtimeChecks": [],
+    "verifyRuns": [],
+    "childReport": {
+      "criteriaSatisfied": [
+        {
+          "id": "criterion-1",
+          "status": "satisfied",
+          "evidence": "全部 30+ 个候选 URL 已用 curl -s -A 'Mozilla/5.0' 实测（HTTP 状态/content-type/条目数），输出逐项表格；CNA 通过抓取首页 /about/rss.aspx 找到迁移后的真实 feed（Feedburner），AP 通过首页 HTML 定位 index.rss 并确认 401 需凭证。可用 9 个确切 URL、不可用 8 个目标均有证据。"
+        }
+      ],
+      "changedFiles": [],
+      "testsAddedOrUpdated": [],
+      "commandsRun": [
+        {
+          "command": "curl -s -m 20 -A 'Mozilla/5.0' -o /tmp/feed_test.bin -w '%{http_code}|%{content_type}' <url> + grep -c '<item>|<entry>'",
+          "result": "passed",
+          "summary": "逐个测试全部候选 feed URL，统计状态码、content-type、条目数及前 200 字节是否 XML"
+        },
+        {
+          "command": "curl -s https://www.cna.com.tw/about/rss.aspx | grep -oE 'href=\"[^\"]*\"' | grep -iE 'xml|rss'",
+          "result": "passed",
+          "summary": "从 CNA RSS 索引页发现 11 个 Feedburner feed URL"
+        },
+        {
+          "command": "curl -s https://apnews.com/ | grep -iE 'rss|feed'",
+          "result": "passed",
+          "summary": "定位 AP 真实 feed 为 index.rss，实测 401 需凭证"
+        },
+        {
+          "command": "curl -s --noproxy '*' -m 15 -A 'Mozilla/5.0' https://www.rti.org.tw/rss/aipl",
+          "result": "passed",
+          "summary": "直连 RTI 返回 000（不可达），代理下全路径 403，确认 WAF/地理封锁"
+        },
+        {
+          "command": "head -c 3 <feed> | xxd",
+          "result": "passed",
+          "summary": "确认 LTN feed 带 UTF-8 BOM、ABC 无 XML 声明，标记解析注意项"
+        }
+      ],
+      "validationOutput": [
+        "可用: feeds.feedburner.com/rsscna/{politics,intworld,mainland,finance} 各 20 条; news.ltn.com.tw/rss/{politics,world,business,society}.xml 各 5-36 条; feeds.npr.org/1014/rss.xml 10 条; rollcall.com/feed/ 10 条; abcnews.go.com/abcnews/topstories 25 条",
+        "不可用: CNA 旧 /rss/*.xml(404), RTI 全站 403, udn 全 404, ctee 全 403, politico 403 Cloudflare, apnews index.rss 401, axios 403 Cloudflare, ABC politics 无 RSS"
+      ],
+      "residualRisks": [
+        "403/被拦源（RTI/工商时报/Politico/Axios）是本机代理 IP 被 WAF 拦截所致；若目标部署在美国/台湾服务器实测可能可访问，需在部署环境复测",
+        "Feedburner 为 Google 托管服务，曾有停用传闻，长期可用性有风险（当前 2026-08 实测正常）",
+        "ABC topstories 是综合头条 feed（25 条含非政治内容），依赖聚合器的三语关键词分类过滤；无政治专属 RSS",
+        "AP 如需接入需申请 AP 新闻 API 凭证（付费），公共 RSS 已于近年停止",
+        "LTN feed 的 UTF-8 BOM 与 ABC 无 XML 声明的格式差异已在聚合器解析层确认需容忍"
+      ],
+      "noStagedFiles": true,
+      "diffSummary": "无代码改动，纯探测验证任务",
+      "reviewFindings": [
+        "no blockers"
+      ],
+      "manualNotes": "CNA 的 feed 发现路径: 首页 RSS 图标指向 /about/rss.aspx，该页列出 11 个 feeds.feedburner.com/rsscna/* 地址（politics/intworld/mainland/finance/local/social/sport/stars/technology/lifehealth/culture），原 www.cna.com.tw/rss/*.xml 已全部 404。自由时报可用分类为 politics/world/business/society/life/entertainment（sport/international/focus 为 404）。"
+    }
+  },
+  "effects": {
+    "fileMutation": {
+      "status": "not-applicable",
+      "expected": false,
+      "attempted": true
+    }
+  },
+  "transcriptPath": "/home/xieguiawu/Desktop/go-projects/news-report/.pi-subagents/artifacts/547c1073_librarian_0_transcript.jsonl",
+  "skills": [
+    "graphify"
+  ],
+  "timestamp": 1785687810633
+}

@@ -12,12 +12,14 @@ import (
 
 // Item 是统一后的新闻条目。
 type Item struct {
-	Title     string
-	URL       string
-	Published time.Time // 无法解析时为零值
-	Summary   string
-	SourceID  string
-	Lang      string
+	Title      string
+	URL        string
+	Published  time.Time // 无法解析时为零值
+	Summary    string
+	SourceID   string
+	Lang       string
+	SourceName string // 原站名（Google News 等聚合 feed 才有）
+	SourceURL  string // 原站域名（Google News 等聚合 feed 才有）
 }
 
 // ── RSS 2.0 ───────────────────────────────────────────────────
@@ -30,12 +32,18 @@ type rssChannel struct {
 	Items []rssItem `xml:"item"`
 }
 type rssItem struct {
-	Title       string `xml:"title"`
-	Link        string `xml:"link"`
-	GUID        string `xml:"guid"`
-	PubDate     string `xml:"pubDate"`
-	Description string `xml:"description"`
-	Content     string `xml:"encoded"`
+	Title       string    `xml:"title"`
+	Link        string    `xml:"link"`
+	GUID        string    `xml:"guid"`
+	PubDate     string    `xml:"pubDate"`
+	Description string    `xml:"description"`
+	Content     string    `xml:"encoded"`
+	Source      rssSource `xml:"source"`
+}
+
+type rssSource struct {
+	URL  string `xml:"url,attr"`
+	Name string `xml:",chardata"`
 }
 
 // ── Atom ──────────────────────────────────────────────────────
@@ -75,6 +83,8 @@ type rdfItem struct {
 // 解析失败或格式不支持时返回错误。
 func Parse(data []byte) ([]Item, error) {
 	trimmed := bytes.TrimSpace(data)
+	// 剥离 UTF-8 BOM（部分台湾 feed 以 BOM 开头）
+	trimmed = bytes.TrimPrefix(trimmed, []byte("\xef\xbb\xbf"))
 	if len(trimmed) == 0 {
 		return nil, fmt.Errorf("空内容")
 	}
@@ -118,10 +128,12 @@ func parseRSS(data []byte) ([]Item, error) {
 			desc = it.Content
 		}
 		items = append(items, Item{
-			Title:     xmlDecode(strings.TrimSpace(it.Title)),
-			URL:       strings.TrimSpace(link),
-			Published: parseTime(it.PubDate),
-			Summary:   htmlToText(desc),
+			Title:      xmlDecode(strings.TrimSpace(it.Title)),
+			URL:        strings.TrimSpace(link),
+			Published:  parseTime(it.PubDate),
+			Summary:    htmlToText(desc),
+			SourceName: strings.TrimSpace(it.Source.Name),
+			SourceURL:  strings.TrimSpace(it.Source.URL),
 		})
 	}
 	if len(items) == 0 {
@@ -218,6 +230,12 @@ var timeLayouts = []string{
 	"2006-01-02",
 	"2006/01/02 15:04:05",
 	"Mon Jan 2 15:04:05 2006",
+	// 中文/东亚格式
+	"2006/1/2 15:04",
+	"2006/1/2 15:04:05",
+	"2006-1-2 15:04",
+	"2006-1-2 15:04:05",
+	"2006年1月2日 15:04",
 }
 
 // 未知时区缩写 → 偏移映射（Go 的 time 包只识别少量缩写，其余按此表纠正）。

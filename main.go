@@ -1,9 +1,11 @@
-// news-report — 欧美权威媒体新闻聚合器（英/德/法，专注国际政策/经济/产业）。
+// news-report — 欧美权威媒体新闻聚合器（英/德/法/中，专注国际政策/美国政治/经济/产业）。
 //
 // 用法：
 //
 //	news-report                    抓取并输出终端报告（默认最近 24h）
+//	news-report ui                 交互式终端界面（TUI）
 //	news-report read <url>         深度阅读：抓取网页并提取正文
+//	news-report find "关键词"       搜索 Google News 找付费文章的免费转载/镜像
 //	news-report sources            列出消息源
 //	news-report sources --live     实测消息源可用性
 //	news-report init               生成默认配置文件
@@ -12,6 +14,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -24,9 +27,11 @@ import (
 	"news-report/internal/config"
 	"news-report/internal/feed"
 	"news-report/internal/fetch"
+	"news-report/internal/gnews"
 	"news-report/internal/output"
 	"news-report/internal/report"
 	"news-report/internal/sources"
+	"news-report/internal/tui"
 )
 
 func main() {
@@ -37,6 +42,10 @@ func main() {
 	switch os.Args[1] {
 	case "read":
 		runRead(os.Args[2:])
+	case "find":
+		runFind(os.Args[2:])
+	case "ui", "tui":
+		runUI(os.Args[2:])
 	case "sources":
 		runSources(os.Args[2:])
 	case "init":
@@ -51,17 +60,19 @@ func main() {
 }
 
 func usage() {
-	fmt.Print(`news-report — 欧美权威媒体新闻聚合器（EN/DE/FR · 政治/经济/产业）
+	fmt.Print(`news-report — 欧美权威媒体新闻聚合器（EN/DE/FR/ZH · 美国政治/国际政策/经济/产业）
 
 用法:
   news-report [flags]               抓取并生成报告（默认终端输出）
+  news-report ui                    交互式终端界面（TUI）
   news-report read <url> [flags]    深度阅读：抓取网页并提取正文
+  news-report find "关键词" [flags]  搜索免费转载/镜像（付费墙文章）
   news-report sources [--live]      列出消息源；--live 实测可用性
   news-report init                  生成默认配置文件 (~/.config/news-report/config.yaml)
 
 报告 flags:
-  --lang en,de,fr        语言过滤（默认全部）
-  --cat politics,economy,industry   分类过滤（默认全部）
+  --lang en,de,fr,zh    语言过滤（默认全部）
+  --cat uspolitics,politics,economy,industry   分类过滤（默认全部）
   --sources id1,id2      仅抓取指定来源
   --minutes N            新鲜度窗口（分钟，默认 1440；0 = 不限）
   --limit N              每分类条数上限（默认 12）
@@ -80,8 +91,13 @@ func usage() {
   --config PATH          配置文件路径
 
 read flags:
-  --lang en|de|fr        Accept-Language（默认 en）
+  --lang en|de|fr|zh     Accept-Language（默认 en）
   --max-chars N          截断正文长度（0 = 不截断）
+
+find flags:
+  --lang en|de|fr|zh     搜索语言（默认 en）
+  --limit N              结果上限（默认 10）
+  --exclude DOMAIN       排除原站域名（标记原站）
 `)
 }
 
@@ -225,11 +241,12 @@ func runRead(args []string) {
 	maxChars := fs.Int("max-chars", 0, "")
 	proxy := fs.String("proxy", "", "")
 	cfgPath := fs.String("config", "", "")
+	args = reorderArgs(args)
 	_ = fs.Parse(args)
-	if fs.NArg() < 1 {
-		fatalMsg("用法: news-report read <url> [--lang en|de|fr] [--max-chars N]")
+	if len(fs.Args()) < 1 {
+		fatalMsg("用法: news-report read <url> [--lang en|de|fr|zh] [--max-chars N]")
 	}
-	url := fs.Arg(0)
+	url := fs.Args()[0]
 	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
 		fatalMsg("URL 必须以 http(s):// 开头")
 	}
@@ -250,6 +267,10 @@ func runRead(args []string) {
 	})
 	art, err := article.Extract(ctx, fetcher, url, *lang)
 	if err != nil {
+		if errors.Is(err, article.ErrPaywall) {
+			fmt.Fprintf(os.Stderr, "提示: %v\n", err)
+			os.Exit(1)
+		}
 		fatal(err)
 	}
 	fmt.Printf("# %s\n\n", art.Title)
@@ -266,6 +287,115 @@ func runRead(args []string) {
 		body = body[:*maxChars] + "…"
 	}
 	fmt.Println(body)
+}
+
+// ── find（付费墙转载搜索） ────────────────────────────────────
+
+func runFind(args []string) {
+	fs := flag.NewFlagSet("find", flag.ExitOnError)
+	lang := fs.String("lang", "en", "")
+	limit := fs.Int("limit", 10, "")
+	exclude := fs.String("exclude", "", "")
+	cfgPath := fs.String("config", "", "")
+	args = reorderArgs(args)
+	_ = fs.Parse(args)
+	if len(fs.Args()) < 1 {
+		fatalMsg("用法: news-report find \"标题关键词\" [--lang en|de|fr|zh] [--exclude 原站域名]")
+	}
+	query := strings.TrimSpace(strings.Join(fs.Args(), " "))
+	if query == "" {
+		fatalMsg("搜索词不能为空")
+	}
+
+	cfg, err := config.Load(*cfgPath)
+	if err != nil {
+		fatal(err)
+	}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	fetcher := fetch.New(fetch.Options{
+		Proxy:     cfg.Proxy,
+		UserAgent: cfg.UserAgent,
+		Timeout:   15 * time.Second,
+		Retries:   2,
+	})
+
+	results, err := gnews.Search(ctx, fetcher, query, *lang)
+	if err != nil {
+		fatal(err)
+	}
+	results = gnews.ExcludeOriginal(results, *exclude)
+	if *limit > 0 && len(results) > *limit {
+		results = results[:*limit]
+	}
+	if len(results) == 0 {
+		fmt.Println("未找到相关报道")
+		return
+	}
+	fmt.Printf("🔍 「%s」 的报道/转载候选（%d 条）：\n\n", query, len(results))
+	for i, r := range results {
+		mark := ""
+		if r.IsOriginal {
+			mark = " [原站]"
+		}
+		age := ""
+		if !r.Published.IsZero() {
+			age = " · " + r.Published.Format("01-02 15:04")
+		}
+		fmt.Printf("%2d. %s%s\n    %s%s%s\n", i+1, r.Title, mark, r.SourceName, age, r.SourceURL)
+		fmt.Printf("    %s\n", r.Link)
+	}
+	fmt.Printf("\n提示: 链接为 Google News 跳转链接，浏览器打开后自动跳转原文；\n")
+	fmt.Printf("      付费墙文章优先选 [原站] 以外的转载媒体。\n")
+}
+
+// ── ui（TUI） ────────────────────────────────────────────────
+
+func runUI(args []string) {
+	fs := flag.NewFlagSet("ui", flag.ExitOnError)
+	langs := fs.String("lang", "", "")
+	cats := fs.String("cat", "", "")
+	srcIDs := fs.String("sources", "", "")
+	minutes := fs.Int("minutes", -1, "")
+	proxy := fs.String("proxy", "", "")
+	cfgPath := fs.String("config", "", "")
+	args = reorderArgs(args)
+	_ = fs.Parse(args)
+
+	cfg, err := config.Load(*cfgPath)
+	if err != nil {
+		fatal(err)
+	}
+	if *langs != "" {
+		cfg.Languages = split(*langs)
+	}
+	if *cats != "" {
+		cfg.Categories = split(*cats)
+	}
+	if *minutes >= 0 {
+		cfg.Minutes = *minutes
+	}
+	if *proxy != "" {
+		cfg.Proxy = *proxy
+	}
+	if err := cfg.Validate(); err != nil {
+		fatal(err)
+	}
+	fetcher := fetch.New(fetch.Options{
+		Proxy:     cfg.Proxy,
+		UserAgent: cfg.UserAgent,
+		Timeout:   time.Duration(cfg.TimeoutSec) * time.Second,
+		Retries:   cfg.Retries,
+	})
+	opts := report.Options{}
+	if *srcIDs != "" {
+		opts.SourceIDs = split(*srcIDs)
+	}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	if err := tui.Run(ctx, cfg, fetcher, opts); err != nil {
+		fatal(err)
+	}
 }
 
 // ── sources ───────────────────────────────────────────────────
@@ -410,6 +540,28 @@ func resolvePath(p string) string {
 }
 
 // ── 工具 ──────────────────────────────────────────────────────
+
+// reorderArgs 把「位置参数在前、flags 在后」的参数序列重排为 flags 在前，
+// 解决 Go flag 包在第一个非 flag 参数处停止解析的问题（如 read <url> --lang de）。
+func reorderArgs(args []string) []string {
+	var ordered, pos []string
+	for i := 0; i < len(args); {
+		a := args[i]
+		if strings.HasPrefix(a, "-") && a != "-" {
+			ordered = append(ordered, a)
+			i++
+			// flag 值：下一个参数若非 flag 开头则视为本 flag 的值
+			if i < len(args) && !strings.HasPrefix(args[i], "-") {
+				ordered = append(ordered, args[i])
+				i++
+			}
+		} else {
+			pos = append(pos, a)
+			i++
+		}
+	}
+	return append(ordered, pos...)
+}
 
 func split(s string) []string {
 	parts := strings.Split(s, ",")

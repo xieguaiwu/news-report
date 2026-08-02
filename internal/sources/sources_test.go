@@ -27,7 +27,7 @@ func TestDefaultsCoverage(t *testing.T) {
 		langs[s.Lang]++
 		tiers[s.Tier]++
 		switch s.Lang {
-		case "en", "de", "fr":
+		case "en", "de", "fr", "zh":
 		default:
 			t.Errorf("非法语言 %q: %s", s.Lang, s.ID)
 		}
