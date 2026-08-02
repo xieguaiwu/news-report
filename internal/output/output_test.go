@@ -75,7 +75,7 @@ func TestMarkdown(t *testing.T) {
 	out := buf.String()
 	for _, want := range []string{
 		"# News Report", "POLITICS", "EU approves", "原文链接", "来源统计",
-		"| BBC World |", "✗ HTTP 500", "news-report v0.2.0",
+		"| BBC World |", "✗ HTTP 500", "news-report v0.3.0",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("Markdown 输出缺少 %q", want)

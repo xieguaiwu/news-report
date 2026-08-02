@@ -27,10 +27,10 @@ type Entry struct {
 
 // Cache 是并发安全的磁盘缓存。
 type Cache struct {
-	dir    string
-	maxMB  int64
-	mu     sync.RWMutex
-	ttl    time.Duration // 统一 TTL（config 覆写），0=未设置
+	dir     string
+	maxMB   int64
+	mu      sync.RWMutex
+	ttl     time.Duration // 统一 TTL（config 覆写），0=未设置
 	tierTTL map[sources.Tier]time.Duration
 }
 
