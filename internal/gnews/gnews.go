@@ -110,4 +110,4 @@ func normalizeDomain(d string) string {
 	return d
 }
 
-func version() string { return "0.3.0" }
+func version() string { return "0.4.0" }
