@@ -134,3 +134,74 @@ func firstLine(s string) string {
 	}
 	return s
 }
+
+func TestTerminalEmptyReport(t *testing.T) {
+	r := &report.Report{
+		Generated:   time.Now(),
+		Config:      config.Default(),
+		Items:       nil,
+		SourceStats: nil,
+	}
+	var buf bytes.Buffer
+	Terminal(&buf, r, false)
+	out := buf.String()
+	if !strings.Contains(out, "0 OK") {
+		t.Errorf("空报告统计异常: %q", out)
+	}
+}
+
+func TestTruncateCJK(t *testing.T) {
+	s := "台積電先進製程產能滿載 半導體供應鏈持續擴張 這是測試"
+	got := truncate(s, 8)
+	runes := []rune(got)
+	if len(runes) > 9 {
+		t.Errorf("CJK truncate 应限制在 9 rune 内: %q (%d runes)", got, len(runes))
+	}
+	if !validUTF8(got) {
+		t.Error("CJK 截断不应产生无效 UTF-8")
+	}
+}
+
+func TestTruncateEmoji(t *testing.T) {
+	s := "Breaking news 🚀 market update 📈 end"
+	got := truncate(s, 15)
+	if !strings.Contains(got, "...") && len(got) <= len(s) {
+		t.Logf("emoji 截断: %q (%d runes)", got, len([]rune(got)))
+	}
+	if !validUTF8(got) {
+		t.Error("emoji 截断不应产生无效 UTF-8")
+	}
+}
+
+func TestMarkdownEmptyItems(t *testing.T) {
+	r := &report.Report{
+		Generated: time.Now(),
+		Config:    config.Default(),
+		Items:     nil,
+	}
+	var buf bytes.Buffer
+	Markdown(&buf, r)
+	out := buf.String()
+	if !strings.Contains(out, "来源统计") {
+		t.Errorf("空条目 Markdown 应含来源统计: %q", out[:100])
+	}
+}
+
+func TestTerminalColorOff(t *testing.T) {
+	r := &report.Report{
+		Generated: time.Now(),
+		Config:    config.Default(),
+		SourceStats: []report.SourceStat{
+			{ID: "test", Name: "Test", OK: false, Err: "HTTP 500"},
+		},
+	}
+	var buf bytes.Buffer
+	Terminal(&buf, r, false)
+	out := buf.String()
+	if strings.Contains(out, "\x1b[31m") {
+		t.Error("color=false 不应含 ANSI 红色")
+	}
+	if !strings.Contains(out, "✗") {
+		t.Error("无颜色模式也应显示失败标记")
+	}
+}

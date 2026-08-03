@@ -67,8 +67,10 @@ type Model struct {
 	tab    int
 	cursor int
 
-	filter    string
-	filtering bool
+	filter       string
+	filtering    bool
+	filterCursor int
+	noColor      bool
 
 	view   view
 	reader *readerState
@@ -90,6 +92,7 @@ type readerState struct {
 // Run 启动 TUI（阻塞直到退出）。
 func Run(ctx context.Context, cfg *config.Config, fetcher *fetch.Fetcher, opts report.Options) error {
 	m := New(cfg, fetcher, opts)
+	m.noColor = os.Getenv("NO_COLOR") != ""
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	_, err := p.Run()
 	return err
@@ -235,18 +238,52 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (m Model) handleFilterKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
-	case "esc", "enter":
+	case "esc":
+		m.view = viewList
+		m.filtering = false
+		m.filter = ""
+		m.filterCursor = 0
+	case "enter":
 		m.view = viewList
 		m.filtering = false
 	case "backspace":
-		if len(m.filter) > 0 {
-			m.filter = m.filter[:len(m.filter)-1]
+		if m.filterCursor > 0 && len(m.filter) > 0 {
+			f := m.filter
+			m.filter = f[:m.filterCursor-1] + f[m.filterCursor:]
+			m.filterCursor--
 		}
+	case "delete":
+		if m.filterCursor < len(m.filter) {
+			f := m.filter
+			m.filter = f[:m.filterCursor] + f[m.filterCursor+1:]
+		}
+	case "left":
+		if m.filterCursor > 0 {
+			m.filterCursor--
+		}
+	case "right":
+		if m.filterCursor < len(m.filter) {
+			m.filterCursor++
+		}
+	case "home":
+		m.filterCursor = 0
+	case "end":
+		m.filterCursor = len(m.filter)
+	case "ctrl+w":
+		m.filter, m.filterCursor = deleteWordBackward(m.filter, m.filterCursor)
+	case "ctrl+u":
+		m.filter = m.filter[m.filterCursor:]
+		m.filterCursor = 0
+	case "ctrl+k":
+		m.filter = m.filter[:m.filterCursor]
 	case "ctrl+c", "q":
 		return m, tea.Quit
 	default:
 		if msg.Type == tea.KeyRunes {
-			m.filter += string(msg.Runes)
+			r := string(msg.Runes)
+			f := m.filter
+			m.filter = f[:m.filterCursor] + r + f[m.filterCursor:]
+			m.filterCursor += len(r)
 		}
 	}
 	m.cursor = 0
@@ -317,6 +354,15 @@ func (m Model) handleListKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.view = viewFilter
 		m.filtering = true
 		m.filter = ""
+		m.filterCursor = 0
+	case "n":
+		if m.filter != "" {
+			m.cursor = nextFilterMatch(m, m.cursor, +1)
+		}
+	case "N":
+		if m.filter != "" {
+			m.cursor = nextFilterMatch(m, m.cursor, -1)
+		}
 	case "r":
 		m.loading = true
 		m.err = ""
@@ -411,7 +457,30 @@ func (m Model) catCount(cat classify.Category) int {
 
 // ── View ─────────────────────────────────────────────────────
 
+func (m Model) viewNoColor() string {
+	if m.showHelp {
+		return m.helpView()
+	}
+	if m.loading {
+		return "news-report\n\n  正在抓取新闻…\n"
+	}
+	if m.rep == nil {
+		return "news-report\n\n" + m.err + "\n\n  按 r 重试，q 退出\n"
+	}
+	switch m.view {
+	case viewReader:
+		return m.readerView()
+	case viewFilter:
+		return m.filterView()
+	default:
+		return m.listView()
+	}
+}
+
 func (m Model) View() string {
+	if m.noColor {
+		return stripANSI(m.viewNoColor())
+	}
 	if m.showHelp {
 		return m.helpView()
 	}
@@ -488,8 +557,15 @@ func (m Model) listView() string {
 
 func (m Model) filterView() string {
 	base := m.listView()
+	// 搜索输入行（含光标指示）
+	p := m.filter
+	if m.filterCursor > 0 {
+		p = p[:m.filterCursor] + "\u258C" + p[m.filterCursor:]
+	} else {
+		p = "\u258C" + p
+	}
 	// 在底部叠加搜索输入行
-	prompt := styleCursor.Render("搜索: ") + m.filter + "▌"
+	prompt := styleCursor.Render("搜索: ") + p
 	return base + "\n" + prompt
 }
 
@@ -532,6 +608,26 @@ func (m Model) readerView() string {
 	}
 	sb.WriteString(styleHelp.Render("↑↓ 滚动  PgUp/PgDn 翻页  Home/End 首尾  Esc 返回  q 退出"))
 	return sb.String()
+}
+
+func stripANSI(s string) string {
+	var b strings.Builder
+	inEsc := false
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c == 0x1b {
+			inEsc = true
+			continue
+		}
+		if inEsc {
+			if c >= 0x40 && c <= 0x7e {
+				inEsc = false
+			}
+			continue
+		}
+		b.WriteByte(c)
+	}
+	return b.String()
 }
 
 func catColorIcon(cat classify.Category, sym string) string {
@@ -617,7 +713,36 @@ func wrapLines(text string, width int) string {
 	return sb.String()
 }
 
+// deleteWordBackward 删前一词。
+func deleteWordBackward(s string, cursor int) (string, int) {
+	if cursor == 0 {
+		return s, 0
+	}
+	i := cursor
+	// 跳过空白
+	for i > 0 && s[i-1] == ' ' {
+		i--
+	}
+	// 跳过非空白词
+	for i > 0 && s[i-1] != ' ' {
+		i--
+	}
+	return s[:i] + s[cursor:], i
+}
+
 // ── 浏览器打开 ───────────────────────────────────────────────
+
+// nextFilterMatch 返回过滤后列表中下/上一个匹配项索引。
+func nextFilterMatch(m Model, cur int, delta int) int {
+	items := m.visibleItems()
+	if len(items) == 0 {
+		return cur
+	}
+	for i := 0; i < len(items); i++ {
+		cur = (cur + delta + len(items)) % len(items)
+	}
+	return cur
+}
 
 func openBrowser(url string) {
 	var cmd *exec.Cmd

@@ -175,3 +175,85 @@ func TestScroll(t *testing.T) {
 		t.Errorf("下滚不应越界，实际 %d", r.offset)
 	}
 }
+
+func TestFilterCursorNavigation(t *testing.T) {
+	m := sampleModel()
+	m = asModel(m.handleListKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}}))
+	// type "ab"
+	m = asModel(m.handleFilterKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a', 'b'}}))
+	if m.filter != "ab" || m.filterCursor != 2 {
+		t.Errorf("输入后 filter=%q cursor=%d", m.filter, m.filterCursor)
+	}
+	// left arrow
+	m = asModel(m.handleFilterKey(tea.KeyMsg{Type: tea.KeyLeft}))
+	if m.filterCursor != 1 {
+		t.Errorf("left 后 cursor=1, 实际 %d", m.filterCursor)
+	}
+	// insert at cursor
+	m = asModel(m.handleFilterKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}}))
+	if m.filter != "axb" || m.filterCursor != 2 {
+		t.Errorf("插入后 filter=%q cursor=%d", m.filter, m.filterCursor)
+	}
+	// backspace at cursor
+	m = asModel(m.handleFilterKey(tea.KeyMsg{Type: tea.KeyBackspace}))
+	if m.filter != "ab" || m.filterCursor != 1 {
+		t.Errorf("backspace 后 filter=%q cursor=%d", m.filter, m.filterCursor)
+	}
+	// home
+	m = asModel(m.handleFilterKey(tea.KeyMsg{Type: tea.KeyHome}))
+	if m.filterCursor != 0 {
+		t.Errorf("home 后 cursor=0, 实际 %d", m.filterCursor)
+	}
+	// Ctrl+U (delete to start) — cursor 在 0，无可删内容
+	m = asModel(m.handleFilterKey(tea.KeyMsg{Type: tea.KeyCtrlU}))
+	if m.filter != "ab" || m.filterCursor != 0 {
+		t.Errorf("Ctrl+U 后 filter=%q cursor=%d", m.filter, m.filterCursor)
+	}
+	// 移动光标到末尾再 Ctrl+U（应清空）
+	m = asModel(m.handleFilterKey(tea.KeyMsg{Type: tea.KeyEnd}))
+	m = asModel(m.handleFilterKey(tea.KeyMsg{Type: tea.KeyCtrlU}))
+	if m.filter != "" || m.filterCursor != 0 {
+		t.Errorf("Ctrl+U at end 后 filter=%q cursor=%d", m.filter, m.filterCursor)
+	}
+}
+
+func TestFilterCtrlW(t *testing.T) {
+	m := sampleModel()
+	m = asModel(m.handleListKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}}))
+	// type "hello world"
+	for _, r := range "hello world test" {
+		m = asModel(m.handleFilterKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}}))
+	}
+	// cursor at end, Ctrl+W deletes "test" (last word)
+	m = asModel(m.handleFilterKey(tea.KeyMsg{Type: tea.KeyCtrlW}))
+	if m.filter != "hello world " || m.filterCursor != 12 {
+		t.Errorf("Ctrl+W 后 filter=%q cursor=%d", m.filter, m.filterCursor)
+	}
+}
+
+func TestFilterEscape(t *testing.T) {
+	m := sampleModel()
+	m = asModel(m.handleListKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}}))
+	m = asModel(m.handleFilterKey(tea.KeyMsg{Type: tea.KeyEsc}))
+	if m.view != viewList || m.filter != "" {
+		t.Errorf("Esc 应退出过滤: view=%v filter=%q", m.view, m.filter)
+	}
+}
+
+func TestHelpOverlay(t *testing.T) {
+	m := sampleModel()
+	m = asModel(m.handleListKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}}))
+	if !m.showHelp {
+		t.Error("? 应打开帮助")
+	}
+	v := m.View()
+	for _, want := range []string{"键位帮助", "切换分类", "Enter", "浏览器打开"} {
+		if !strings.Contains(v, want) {
+			t.Errorf("帮助视图缺少 %q", want)
+		}
+	}
+	m = asModel(m.handleListKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}}))
+	if m.showHelp {
+		t.Error("再次 ? 应关闭帮助")
+	}
+}
