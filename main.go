@@ -70,6 +70,7 @@ func usage() {
   news-report read <url> [flags]    深度阅读：抓取网页并提取正文
   news-report find "关键词" [flags]  搜索免费转载/镜像（付费墙文章）
   news-report sources [--live]      列出消息源；--live 实测可用性
+  news-report cache [stat|clear]    查看缓存状态 / 清空缓存
   news-report init                  生成默认配置文件 (~/.config/news-report/config.yaml)
 
 报告 flags:
@@ -365,6 +366,8 @@ func runUI(args []string) {
 	minutes := fs.Int("minutes", -1, "")
 	proxy := fs.String("proxy", "", "")
 	cfgPath := fs.String("config", "", "")
+	llmModel := fs.String("llm-model", "", "LLM 模型覆写（如 gpt-4o）")
+	noLLM := fs.Bool("no-llm", false, "禁用 LLM 功能")
 	args = reorderArgs(args)
 	_ = fs.Parse(args)
 
@@ -383,6 +386,13 @@ func runUI(args []string) {
 	}
 	if *proxy != "" {
 		cfg.Proxy = *proxy
+	}
+	// LLM CLI 覆写
+	if *noLLM {
+		cfg.LLM.APIKey = ""
+	}
+	if *llmModel != "" {
+		cfg.LLM.Model = *llmModel
 	}
 	if err := cfg.Validate(); err != nil {
 		fatal(err)
@@ -407,14 +417,41 @@ func runUI(args []string) {
 // ── cache ────────────────────────────────────────────────────
 
 func runCache(args []string) {
-	if len(args) > 0 && args[0] == "clear" {
-		cfg, _ := config.Load("")
-		cd := cfg.CachePath()
-		_ = os.RemoveAll(cd + "/feed_cache")
-		fmt.Println("缓存已清空:", cd+"/feed_cache")
+	if len(args) == 0 {
+		fmt.Println("用法:")
+		fmt.Println("  news-report cache stat    查看缓存状态")
+		fmt.Println("  news-report cache clear   清空全部缓存（feed + 文章 + 已读记录）")
 		return
 	}
-	fmt.Println("用法: news-report cache clear")
+	cfg, _ := config.Load("")
+	cd := cfg.CachePath()
+
+	switch args[0] {
+	case "stat":
+		cacheStat(cd)
+	case "clear":
+		var removed int64
+		for _, sub := range []string{"feed_cache", "articles", "llm", "seen.json"} {
+			target := cd + "/" + sub
+			sz := dirSize(target)
+			if sz > 0 {
+				if err := os.RemoveAll(target); err == nil {
+					removed += sz
+					fmt.Printf("  已清空 %s (%s)\n", sub, formatBytes(sz))
+				} else {
+					fmt.Printf("  清空失败 %s: %v\n", sub, err)
+				}
+			}
+		}
+		if removed > 0 {
+			fmt.Printf("\n共释放 %s\n", formatBytes(removed))
+		} else {
+			fmt.Println("缓存已为空")
+		}
+	default:
+		fmt.Printf("未知子命令: %s\n", args[0])
+		fmt.Println("用法: news-report cache [stat|clear]")
+	}
 }
 
 // ── sources ───────────────────────────────────────────────────
@@ -626,4 +663,89 @@ func isTerminal() bool {
 		return false
 	}
 	return fi.Mode()&os.ModeCharDevice != 0
+}
+
+// ── cache 辅助 ─────────────────────────────────────────────────
+
+func cacheStat(dir string) {
+	fmt.Println("新闻缓存目录:", dir)
+	fmt.Println()
+
+	subdirs := []struct {
+		name string
+		desc string
+	}{
+		{"feed_cache", "Feed 响应缓存（TTL 按来源 6-30min）"},
+		{"articles", "文章正文缓存（TTL 24h）"},
+		{"llm", "LLM 翻译/摘要缓存（TTL 7 天）"},
+		{"seen.json", "已读记录（7 天自动清理）"},
+	}
+
+	var totalSize int64
+	for _, s := range subdirs {
+		target := dir + "/" + s.name
+		sz := dirSize(target)
+		totalSize += sz
+		if sz == 0 && s.name != "seen.json" {
+			fmt.Printf("  %-15s （空）\n", s.name)
+		} else if sz > 0 {
+			files := countFiles(target)
+			fmt.Printf("  %-15s %s  %d 文件  —  %s\n", s.name, formatBytes(sz), files, s.desc)
+		}
+	}
+	fmt.Printf("\n总计: %s\n", formatBytes(totalSize))
+}
+
+// dirSize 递归计算目录/文件大小（不存在返回 0）。
+func dirSize(path string) int64 {
+	var total int64
+	fi, err := os.Stat(path)
+	if err != nil {
+		return 0
+	}
+	if !fi.IsDir() {
+		return fi.Size()
+	}
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		return 0
+	}
+	for _, e := range entries {
+		info, err := e.Info()
+		if err != nil {
+			continue
+		}
+		if e.IsDir() {
+			total += dirSize(path + "/" + e.Name())
+		} else {
+			total += info.Size()
+		}
+	}
+	return total
+}
+
+func countFiles(path string) int {
+	fi, err := os.Stat(path)
+	if err != nil {
+		return 0
+	}
+	if !fi.IsDir() {
+		return 1
+	}
+	entries, _ := os.ReadDir(path)
+	return len(entries)
+}
+
+func formatBytes(n int64) string {
+	const unit = 1024
+	if n < unit {
+		return fmt.Sprintf("%d B", n)
+	}
+	div, exp := int64(unit), 0
+	for n2 := n / unit; n2 >= unit; n2 /= unit {
+		div *= unit
+		exp++
+	}
+	suffixes := []string{"KB", "MB", "GB"}
+	return fmt.Sprintf("%.1f %s", float64(n)/float64(div), suffixes[exp])
 }

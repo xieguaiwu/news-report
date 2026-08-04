@@ -1,0 +1,159 @@
+{
+  "runId": "573543da",
+  "agent": "hephaestus",
+  "task": "更新 ~/prompt_boilerplates/Coding/development-quality-gates.md，新增「关卡 12：字符串 / Rune 安全」。\n\n这个关卡的来源是 news-report 项目（Go CLI 新闻聚合器）中反复出现的 bug 模式。请先通读该文件了解现有 11 个关卡的格式风格，然后在关卡 11 之后新增关卡 12。\n\n要求：\n- 保持与现有关卡一致的格式：关卡标题 → 一句话核心问题 → 具体检查清单 → 典型违规示例 → 作业要求\n- 关卡 12 的内容应覆盖以下实际遇到的 bug 模式：\n\n1. **Byte vs Rune 切片**：Go 中 `s[:n]` 是按 byte 索引，中文字符每个占 3 字节，按 byte 切片会切断多字节字符产生乱码。应该先用 `[]rune(s)` 转换再切片。\n\n2. **Rune 安全的 cursor 定位**：在输入框中定位光标时，left/right 每次移动 1 byte 会在中文中落入字符中间，导致后续操作（退格/删除）损坏字符串。应将输入字符串存储为 `[]rune`，cursor 为 rune 索引。\n\n3. **字符串长度语义混淆**：`len(s)` 是字节数，`len([]rune(s))` 是字符数。用于截断/显示窗口计算时必须使用后者。\n\n4. **空格压缩破坏结构**：`strings.Join(strings.Fields(s), \" \")` 会将 `\\n\\n` 段落分隔压缩成单空格，导致文章段落完全折叠。需用占位符保护结构标记。\n\n5. **简繁中文搜索**：`strings.Contains` 对简繁中文视为不同字符串。需要用字符映射表（s2t/t2s）做归一化后再匹配。\n\n6. **显示窗口容量估算**：禁止使用硬编码魔法数字（如 `*3`）估算每行可显示的字符数。应从实际终端尺寸计算：`可视行数 × (宽度 - 边距)`。\n\n每个 bug 模式用简洁的示例代码对比（错误 vs 正确），不要长篇描述。\n\n同时更新文件头部的 version 号（如 1.3.0 → 1.4.0）和关卡总览列表（加入关卡 12）。\n\n输出中文。",
+  "exitCode": 0,
+  "processSignal": "SIGTERM",
+  "usage": {
+    "input": 39556,
+    "output": 7411,
+    "cacheRead": 441344,
+    "cacheWrite": 0,
+    "cost": 0,
+    "turns": 15
+  },
+  "model": "deepseek/deepseek-v4-pro:xhigh",
+  "attemptedModels": [
+    "deepseek/deepseek-v4-pro:xhigh"
+  ],
+  "modelAttempts": [
+    {
+      "model": "deepseek/deepseek-v4-pro:xhigh",
+      "success": true,
+      "exitCode": 0,
+      "usage": {
+        "input": 39556,
+        "output": 7411,
+        "cacheRead": 441344,
+        "cacheWrite": 0,
+        "cost": 0,
+        "turns": 15
+      }
+    }
+  ],
+  "durationMs": 133269,
+  "toolCount": 21,
+  "launchContractDigest": "8e62222e8d00145cf5050e724e447bc7b54147e71f11e4fb420dadf7b08b28af",
+  "launchResolvedExtensions": {
+    "version": 1,
+    "source": "launch-resolved",
+    "disableAmbientExtensions": false,
+    "runtime": [
+      "sha256:3c1d0f7dc40b23f3"
+    ],
+    "configured": [],
+    "effective": [
+      "sha256:3c1d0f7dc40b23f3"
+    ],
+    "omitted": {
+      "runtime": 0,
+      "configured": 0,
+      "effective": 0
+    }
+  },
+  "acceptance": {
+    "status": "attested",
+    "evidenceStatus": "attested",
+    "explicit": false,
+    "effectiveAcceptance": {
+      "level": "attested",
+      "explicit": false,
+      "inferredReason": [
+        "default lightweight attestation"
+      ],
+      "criteria": [
+        {
+          "id": "criterion-1",
+          "must": "Return a concise result and residual risks when applicable",
+          "evidence": [
+            "manual-notes",
+            "residual-risks"
+          ],
+          "severity": "required"
+        }
+      ],
+      "evidence": [
+        "manual-notes",
+        "residual-risks"
+      ],
+      "verify": [],
+      "stopRules": []
+    },
+    "inferredReason": [
+      "default lightweight attestation"
+    ],
+    "criteria": [
+      {
+        "id": "criterion-1",
+        "must": "Return a concise result and residual risks when applicable",
+        "evidence": [
+          "manual-notes",
+          "residual-risks"
+        ],
+        "severity": "required"
+      }
+    ],
+    "runtimeChecks": [],
+    "verifyRuns": [],
+    "childReport": {
+      "criteriaSatisfied": [
+        {
+          "id": "criterion-1",
+          "status": "satisfied",
+          "evidence": "Updated ~/prompt_boilerplates/Coding/development-quality-gates.md v1.3.0 → v1.4.0 with new 关卡 12 covering 6 bug patterns from news-report project. All integration points updated: 关卡总览 list, strictness table (strict/normal/light), 30-second checklist, changelog, and real case table (#10–#13). Format matches existing gate style exactly (title → core question → subsections with ❌/✅ code pairs → assignment requirements → source references)."
+        }
+      ],
+      "changedFiles": [
+        "/home/xieguiawu/prompt_boilerplates/Coding/development-quality-gates.md"
+      ],
+      "testsAddedOrUpdated": [],
+      "commandsRun": [
+        {
+          "command": "grep -n '关卡 12\\|关卡总览\\|严格程度\\|30 秒速查\\|变更日志\\|### 1.4.0' development-quality-gates.md",
+          "result": "passed",
+          "summary": "All 6 integration points confirmed present and correctly positioned"
+        },
+        {
+          "command": "grep '^## ' development-quality-gates.md",
+          "result": "passed",
+          "summary": "19 H2 sections, all 12 gates ordered correctly, no duplicates"
+        },
+        {
+          "command": "wc -l development-quality-gates.md",
+          "result": "passed",
+          "summary": "649 lines total, ~160 lines added for 关卡 12"
+        }
+      ],
+      "validationOutput": [
+        "Version header: 1.4.0 ✓",
+        "关卡总览: 12 entries (1–12) ✓",
+        "关卡 12 section: 6 sub-patterns with ❌/✅ code pairs from real news-report source ✓",
+        "Real case table continuation: #10–#13 ✓",
+        "Strictness: strict=1–12, normal=1–4+6+9–12, light=1+2+9–12 ✓",
+        "30-sec checklist: 12 items ✓",
+        "Changelog: 1.4.0 entry with all changes documented ✓"
+      ],
+      "residualRisks": [
+        "none"
+      ],
+      "noStagedFiles": true,
+      "diffSummary": "+~160 lines: new 关卡 12 with 6 sub-patterns (Byte vs Rune, Rune cursor, len semantics, space compression, simp/trad search, display capacity). Updated version→1.4.0, 关卡总览, strictness table, 30-sec checklist, changelog, and added 4 real cases (#10–#13).",
+      "reviewFindings": [
+        "no blockers"
+      ],
+      "manualNotes": "All code examples in 关卡 12 are sourced from actual news-report files: internal/tui/tui.go (rune cursor, truncation), internal/article/article.go (clean with \\x00 placeholder), internal/s2t/s2t.go (simp/trad mapping), internal/scrape/scrape.go (collapse trap). Source file paths and line numbers are cited inline."
+    }
+  },
+  "effects": {
+    "fileMutation": {
+      "status": "not-applicable",
+      "expected": false,
+      "attempted": true
+    }
+  },
+  "transcriptPath": "/home/xieguiawu/Desktop/go-projects/news-report/.pi-subagents/artifacts/573543da_hephaestus_0_transcript.jsonl",
+  "skills": [
+    "graphify"
+  ],
+  "timestamp": 1785752217629
+}

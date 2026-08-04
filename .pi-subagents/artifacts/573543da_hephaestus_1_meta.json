@@ -1,0 +1,150 @@
+{
+  "runId": "573543da",
+  "agent": "hephaestus",
+  "task": "更新 ~/prompt_boilerplates/Coding/interactive-cli-design.md，融入 news-report 项目的 TUI 实践经验。\n\n请先通读该文件了解现有结构和风格，然后在以下位置做增强：\n\n### 新增内容 A：§1 文本输入规范 — 新增 §1.6 CJK 多字节输入安全\n\n在 §1.5 之后新增，内容：\n- **核心规则**：输入框的光标定位和编辑操作必须基于 rune（字符）而非 byte（字节）\n- **Rune 级 cursor**：将 filter 存储为 `[]rune`，cursor 整数为 rune 索引，left/right 移动 1 个 rune\n- **退格/删除**：基于 rune 切片 (`append(s[:cursor-1], s[cursor:]...)`)，不用 byte 切片\n- **插入字符**：多字节字符（如中文 3 字节）插入后 cursor += len([]rune(inserted))\n- **终端列宽注意**：CJK 字符占 2 列，但 cursor 仍然按 rune 定位，显示偏移由终端处理\n- 给出 Go 代码片段（错误 vs 正确）\n\n### 新增内容 B：§2 信息密集界面 — 新增 §2.7 阅读器/文本显示窗口\n\n内容：\n- **禁止硬编码估算**：不要用 `(height-6)*3` 这种魔法数字估算每行字符数\n- **正确的窗口计算**：`visLines := height - headerLines - helpLines`；整个文本预折行后按行切片\n- **行级滚动模式（推荐）**：全文按终端宽度预折行 → 拆分为 `[]string` → 按行索引偏移\n  - 好处：滚动步长精确对齐屏幕行，无需估算\n  - 窗口缩放时需重新折行（在 `tea.WindowSizeMsg` 中处理）\n- **段落保护**：压缩空白前用占位符保护 `\\n\\n`\n- **scrollDown 上限**：`max(0, len(lines)-1)`，不是 `len(rawBody)`\n- Go 代码对比（错误 vs 正确）\n\n### 新增内容 C：§2.3 搜索 — 扩展搜索小节\n\n在现有 §2.3 后面追加简繁一致性子节：\n- **简繁一致性**：中文字符映射表（s2t/t2s）归一化搜索词和文本后再匹配\n- **双向匹配**：先原始匹配，失败后双方归一化（通常统一转简体）再匹配\n- 给出 Go 代码示例\n\n### 新增内容 D：新 §6 外部工具集成\n\n在 §5（验收清单）之前新增 §6，内容：\n- **从 TUI 打开浏览器 / 复制到剪贴板**：需重定向 stdin/stdout/stderr 到 `/dev/null` 避免 SIGPIPE\n- **剪贴板自动检测**：Wayland → `wl-copy`，X11 → `xclip`，macOS → `pbcopy`\n- **按键覆盖检查**：每个视图（列表/阅读/过滤/弹窗）都必须处理相同的快捷键（如 `o`, `c`）\n\n### 变更清单\n- 所有新增章节保持与现有格式一致的风格\n- 更新文件头 version 号（如 1.1.0 → 1.2.0）\n- 更新 §5 验收清单：新增针对 CJK 安全、行级滚动、外部工具的检查项\n- 更新交叉引用表\n\n输出中文。",
+  "exitCode": 0,
+  "processSignal": "SIGTERM",
+  "usage": {
+    "input": 56345,
+    "output": 18852,
+    "cacheRead": 1421312,
+    "cacheWrite": 0,
+    "cost": 0,
+    "turns": 29
+  },
+  "model": "deepseek/deepseek-v4-pro:xhigh",
+  "attemptedModels": [
+    "deepseek/deepseek-v4-pro:xhigh"
+  ],
+  "modelAttempts": [
+    {
+      "model": "deepseek/deepseek-v4-pro:xhigh",
+      "success": true,
+      "exitCode": 0,
+      "usage": {
+        "input": 56345,
+        "output": 18852,
+        "cacheRead": 1421312,
+        "cacheWrite": 0,
+        "cost": 0,
+        "turns": 29
+      }
+    }
+  ],
+  "durationMs": 280059,
+  "toolCount": 33,
+  "launchContractDigest": "f52ed9209ba0a3f0479335b0275a2404059881fe0da8188192944d3f964e416d",
+  "launchResolvedExtensions": {
+    "version": 1,
+    "source": "launch-resolved",
+    "disableAmbientExtensions": false,
+    "runtime": [
+      "sha256:3c1d0f7dc40b23f3"
+    ],
+    "configured": [],
+    "effective": [
+      "sha256:3c1d0f7dc40b23f3"
+    ],
+    "omitted": {
+      "runtime": 0,
+      "configured": 0,
+      "effective": 0
+    }
+  },
+  "acceptance": {
+    "status": "attested",
+    "evidenceStatus": "attested",
+    "explicit": false,
+    "effectiveAcceptance": {
+      "level": "attested",
+      "explicit": false,
+      "inferredReason": [
+        "default lightweight attestation"
+      ],
+      "criteria": [
+        {
+          "id": "criterion-1",
+          "must": "Return a concise result and residual risks when applicable",
+          "evidence": [
+            "manual-notes",
+            "residual-risks"
+          ],
+          "severity": "required"
+        }
+      ],
+      "evidence": [
+        "manual-notes",
+        "residual-risks"
+      ],
+      "verify": [],
+      "stopRules": []
+    },
+    "inferredReason": [
+      "default lightweight attestation"
+    ],
+    "criteria": [
+      {
+        "id": "criterion-1",
+        "must": "Return a concise result and residual risks when applicable",
+        "evidence": [
+          "manual-notes",
+          "residual-risks"
+        ],
+        "severity": "required"
+      }
+    ],
+    "runtimeChecks": [],
+    "verifyRuns": [],
+    "childReport": {
+      "criteriaSatisfied": [
+        {
+          "id": "criterion-1",
+          "status": "satisfied",
+          "evidence": "文件已从 526 行扩展到 791 行，版本 1.1.0→1.2.0，所有 4 处新增内容（§1.6 CJK 安全、§2.3 简繁扩展、§2.7 阅读器、§5 外部工具）均已落地，§6 验收清单重构为 A-H 8 节，交叉引用表同步，变更日志已更新。所有新增章节风格与现有格式一致（中文、Go 代码块、news-report 实践引用框）。"
+        }
+      ],
+      "changedFiles": [
+        "~/prompt_boilerplates/Coding/interactive-cli-design.md"
+      ],
+      "testsAddedOrUpdated": [],
+      "commandsRun": [
+        {
+          "command": "grep -n '^### \\|^#### \\|^## ' interactive-cli-design.md",
+          "result": "passed",
+          "summary": "验证所有章节编号正确：§1.6, §2.3(扩展), §2.7, §5(外部工具), §6(验收清单 A-H)"
+        }
+      ],
+      "validationOutput": [
+        "version: 1.2.0 ✓",
+        "§1.6 CJK 多字节输入安全 — 含 rune vs byte 代码对比 ✓",
+        "§2.3 简繁一致性搜索 — 含 matchFilter 代码示例 ✓",
+        "§2.7 阅读器/文本显示窗口 — 含 readerViewGood/Bad 代码对比 ✓",
+        "§5 外部工具集成 — 5.1~5.3 含 openBrowser/copyToClipboard 完整实现 ✓",
+        "§6 验收清单 A-H 8 节 (原 5 节) ✓",
+        "交叉引用表 §5→§6, §5-E→§6-H 更新 ✓",
+        "变更日志 1.2.0 条目完整 ✓"
+      ],
+      "residualRisks": [
+        "无。所有新增内容均为基于 news-report 项目实战经验的规则提炼，不涉及代码变更，无需构建验证。"
+      ],
+      "noStagedFiles": true,
+      "diffSummary": "新增 ~265 行：§1.6 CJK 多字节安全(53行)、§2.3 简繁搜索扩展(23行)、§2.7 阅读器显示窗口(72行)、§5 外部工具集成(100行)、§6 验收清单重构(+4节, +14检查项)、交叉引用表与变更日志同步更新",
+      "reviewFindings": [
+        "no blockers"
+      ],
+      "manualNotes": "所有新增内容风格与现有规范一致（中文叙述、Go 代码块、news-report 引用框）。§6 验收清单原 A-E 5 节扩展为 A-H 8 节，新增 B (CJK 安全)、D (阅读器)、E (外部工具) 三节。1.1.0 变更日志中补充了 (现 §6) 标注以保持跨版本可追溯性。"
+    }
+  },
+  "effects": {
+    "fileMutation": {
+      "status": "not-applicable",
+      "expected": false,
+      "attempted": true
+    }
+  },
+  "transcriptPath": "/home/xieguiawu/Desktop/go-projects/news-report/.pi-subagents/artifacts/573543da_hephaestus_1_transcript.jsonl",
+  "skills": [
+    "graphify"
+  ],
+  "timestamp": 1785752364438
+}

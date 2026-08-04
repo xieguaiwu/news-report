@@ -1,16 +1,16 @@
 # Graph Report - news-report  (2026-08-03)
 
 ## Corpus Check
-- 55 files · ~35,521 words
+- 55 files · ~36,434 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 532 nodes · 960 edges · 30 communities (23 shown, 7 thin omitted)
-- Extraction: 89% EXTRACTED · 11% INFERRED · 0% AMBIGUOUS · INFERRED: 110 edges (avg confidence: 0.8)
+- 545 nodes · 1010 edges · 30 communities (23 shown, 7 thin omitted)
+- Extraction: 88% EXTRACTED · 12% INFERRED · 0% AMBIGUOUS · INFERRED: 118 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `c042ffec`
+- Built from commit: `c5b9c57c`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -20,7 +20,7 @@
 - Parse
 - Run
 - Extract
-- Terminal
+- Default
 - Classify
 - HTTP Feed 响应缓存层架构设计
 - news-report · 欧美权威媒体新闻聚合器
@@ -46,18 +46,20 @@
 - Task for prometheus
 
 ## God Nodes (most connected - your core abstractions)
-1. `Model` - 29 edges
+1. `Model` - 31 edges
 2. `Fetcher` - 27 edges
 3. `Parse()` - 21 edges
 4. `Run()` - 20 edges
 5. `Config` - 17 edges
 6. `Extract()` - 15 edges
-7. `Report` - 14 edges
-8. `Load()` - 13 edges
-9. `HTTP Feed 响应缓存层架构设计` - 13 edges
-10. `Classify()` - 12 edges
+7. `sampleModel()` - 15 edges
+8. `Report` - 14 edges
+9. `Default()` - 13 edges
+10. `Load()` - 13 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `runInit()` --calls--> `Default()`  [INFERRED]
+  main.go → internal/config/config.go
 - `feedCount()` --calls--> `Parse()`  [INFERRED]
   main.go → internal/feed/feed.go
 - `runFind()` --calls--> `Search()`  [INFERRED]
@@ -65,8 +67,6 @@
 - `runFind()` --calls--> `ExcludeOriginal()`  [INFERRED]
   main.go → internal/gnews/gnews.go
 - `runReport()` --calls--> `Terminal()`  [INFERRED]
-  main.go → internal/output/output.go
-- `runReport()` --calls--> `Markdown()`  [INFERRED]
   main.go → internal/output/output.go
 
 ## Import Cycles
@@ -79,8 +79,8 @@ Cohesion: 0.09
 Nodes (31): Client, Fetcher, Options, robotsRule, StatusError, globToRegexp(), Context, Duration (+23 more)
 
 ### Community 1 - "main.go"
-Cohesion: 0.13
-Nodes (31): Config, SourceOverride, Default(), expandPath(), Duration, Load(), boolPtr(), T (+23 more)
+Cohesion: 0.16
+Nodes (23): Config, SourceOverride, expandPath(), Duration, Load(), applyFlags(), fatal(), fatalMsg() (+15 more)
 
 ### Community 2 - "Parse"
 Cohesion: 0.15
@@ -94,9 +94,9 @@ Nodes (37): buildSources(), collectSource(), Context, Duration, Time, Run(), sou
 Cohesion: 0.15
 Nodes (19): Article, errString, statusError, clean(), errHTTP(), Extract(), fallbackExtract(), fallbackTitle() (+11 more)
 
-### Community 5 - "Terminal"
-Cohesion: 0.21
-Nodes (18): bold(), cResetIf(), dim(), JSON(), Markdown(), Terminal(), firstLine(), T (+10 more)
+### Community 5 - "Default"
+Cohesion: 0.13
+Nodes (31): Default(), boolPtr(), T, TestDefaultConfig(), TestLoadAndOverride(), TestLoadMissingFileReturnsDefaults(), TestSaveRoundTrip(), TestValidateErrors() (+23 more)
 
 ### Community 6 - "Classify"
 Cohesion: 0.24
@@ -132,15 +132,15 @@ Nodes (6): Code Review: news-report v0.1.0, CRITICAL (3 issues), HIGH (5 issues)
 
 ### Community 16 - "Model"
 Cohesion: 0.11
-Nodes (23): Builder, Category, catColorIcon(), fetchReaderCmd(), fetchReportCmd(), Cmd, Context, Item (+15 more)
+Nodes (26): Builder, Category, catColorIcon(), deleteWordBackward(), fetchReaderCmd(), fetchReportCmd(), Cmd, Context (+18 more)
 
 ### Community 17 - "Search"
 Cohesion: 0.22
 Nodes (15): Result, ExcludeOriginal(), Context, Time, langParams(), normalizeDomain(), Search(), splitTitleSource() (+7 more)
 
 ### Community 18 - "sampleModel"
-Cohesion: 0.38
-Nodes (12): asModel(), Cmd, T, sampleModel(), TestBuildTabs(), TestCatCount(), TestFilter(), TestListNavigation() (+4 more)
+Cohesion: 0.34
+Nodes (16): asModel(), Cmd, T, sampleModel(), TestBuildTabs(), TestCatCount(), TestFilter(), TestFilterCtrlW() (+8 more)
 
 ### Community 19 - "Google News RSS 搜索接口调研报告（find 转载功能）"
 Cohesion: 0.29
@@ -171,11 +171,11 @@ Nodes (14): Cache, Entry, Duration, hexByte(), New(), sha256Sum(), T, TestCacheC
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `Fetcher` connect `Fetcher` to `Model`, `Search`, `Run`, `Extract`?**
-  _High betweenness centrality (0.160) - this node is a cross-community bridge._
+  _High betweenness centrality (0.164) - this node is a cross-community bridge._
 - **Why does `Run()` connect `Run` to `Fetcher`, `main.go`, `Classify`, `Score`, `IsDuplicate`, `Model`?**
-  _High betweenness centrality (0.121) - this node is a cross-community bridge._
+  _High betweenness centrality (0.119) - this node is a cross-community bridge._
 - **Why does `Parse()` connect `Parse` to `Fetcher`, `main.go`, `Run`, `Extract`, `Extract`, `Search`?**
-  _High betweenness centrality (0.110) - this node is a cross-community bridge._
+  _High betweenness centrality (0.108) - this node is a cross-community bridge._
 - **Are the 15 inferred relationships involving `Parse()` (e.g. with `.bytesWithUA()` and `mustURL()`) actually correct?**
   _`Parse()` has 15 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 8 inferred relationships involving `Run()` (e.g. with `Classify()` and `IsDuplicate()`) actually correct?**

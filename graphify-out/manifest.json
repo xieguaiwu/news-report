@@ -10,13 +10,13 @@
     "semantic_hash": ""
   },
   "internal/article/article.go": {
-    "mtime": 1785688017.6623468,
-    "ast_hash": "4760b4143f953d7fb7f4dc8d18432d5b",
+    "mtime": 1785719059.6978362,
+    "ast_hash": "6af0f144665a261ac7983191e2225c7c",
     "semantic_hash": ""
   },
   "internal/article/article_test.go": {
-    "mtime": 1785686412.5242498,
-    "ast_hash": "0d1f3c676671257c9b3e7cb6c8eb5841",
+    "mtime": 1785719219.6780264,
+    "ast_hash": "8c5da3e574733f58099794ced95fbb36",
     "semantic_hash": ""
   },
   "internal/classify/classify.go": {
@@ -30,8 +30,8 @@
     "semantic_hash": ""
   },
   "internal/config/config.go": {
-    "mtime": 1785690616.6419106,
-    "ast_hash": "f08f876e2e072f6b65d8abf8f1654dcc",
+    "mtime": 1785718574.2538097,
+    "ast_hash": "bd448478af1fd1cf2651317ef072bc8b",
     "semantic_hash": ""
   },
   "internal/config/config_test.go": {
@@ -70,13 +70,13 @@
     "semantic_hash": ""
   },
   "internal/output/output.go": {
-    "mtime": 1785690616.6436331,
-    "ast_hash": "31faf55fccb25c9bad32928c0f27e500",
+    "mtime": 1785718574.2542439,
+    "ast_hash": "415c58a275dd23731a80fd4e1ac28a77",
     "semantic_hash": ""
   },
   "internal/output/output_test.go": {
-    "mtime": 1785718354.8064363,
-    "ast_hash": "88d2ccc5c058c0aa412e6e15cc7c5c87",
+    "mtime": 1785718574.2565358,
+    "ast_hash": "c15ae483ce24be9d3c43c3935b991b8f",
     "semantic_hash": ""
   },
   "internal/rank/rank.go": {
@@ -165,8 +165,8 @@
     "semantic_hash": ""
   },
   "internal/gnews/gnews.go": {
-    "mtime": 1785690616.6441054,
-    "ast_hash": "c0677ad42575fd4c3ecaec21bff1200d",
+    "mtime": 1785718574.2545743,
+    "ast_hash": "573351887fa1844b69b556a0fc9aed59",
     "semantic_hash": ""
   },
   "internal/gnews/gnews_test.go": {
@@ -175,13 +175,13 @@
     "semantic_hash": ""
   },
   "internal/tui/tui.go": {
-    "mtime": 1785718445.942253,
-    "ast_hash": "ae71b79b54ec568462e7a2fa5003b23a",
+    "mtime": 1785719249.4332511,
+    "ast_hash": "65e7b47ace7cab635e56670d63e48aa6",
     "semantic_hash": ""
   },
   "internal/tui/tui_test.go": {
-    "mtime": 1785718546.4131384,
-    "ast_hash": "fb795df6fcc71df353301978a2f32314",
+    "mtime": 1785719277.9794667,
+    "ast_hash": "484b7a4720c245923bdb326658296bdf",
     "semantic_hash": ""
   },
   ".pi-subagents/artifacts/547c1073_librarian_0_input.md": {
@@ -272,6 +272,16 @@
   "docs/CACHE_ARCHITECTURE.md": {
     "mtime": 1785690012.3714871,
     "ast_hash": "2e29beec1cc7d78e66266669a6916124",
+    "semantic_hash": ""
+  },
+  "internal/s2t/s2t.go": {
+    "mtime": 1785719143.286455,
+    "ast_hash": "fe8673472b489526a7ae77ee075e04af",
+    "semantic_hash": ""
+  },
+  "internal/s2t/s2t_test.go": {
+    "mtime": 1785719170.5316563,
+    "ast_hash": "fe87247f471ffb778c06472063607abe",
     "semantic_hash": ""
   }
 }

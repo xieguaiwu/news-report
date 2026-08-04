@@ -87,8 +87,8 @@ func TestFilter(t *testing.T) {
 	}
 	// 输入关键词
 	m3 := asModel(m2.handleFilterKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'E', 'U'}}))
-	if m3.filter != "EU" {
-		t.Errorf("过滤词错误: %q", m3.filter)
+	if string(m3.filter) != "EU" {
+		t.Errorf("过滤词错误: %q", string(m3.filter))
 	}
 	// 确认过滤
 	m4 := asModel(m3.handleFilterKey(tea.KeyMsg{Type: tea.KeyEnter}))
@@ -161,18 +161,53 @@ func TestQuit(t *testing.T) {
 }
 
 func TestScroll(t *testing.T) {
-	r := &readerState{body: strings.Repeat("x", 100), offset: 10}
-	r.scrollUp(5)
-	if r.offset != 5 {
-		t.Errorf("上滚后 offset 应为 5，实际 %d", r.offset)
+	// 基于行的滚动：10 行文本，offset 从 5 开始
+	r := &readerState{body: "line0\nline1\nline2\nline3\nline4\nline5\nline6\nline7\nline8\nline9",
+		lines:  []string{"line0", "line1", "line2", "line3", "line4", "line5", "line6", "line7", "line8", "line9"},
+		offset: 5}
+	r.scrollUp(2, 10)
+	if r.offset != 3 {
+		t.Errorf("上滚 2 行后 offset 应为 3，实际 %d", r.offset)
 	}
-	r.scrollUp(100)
+	r.scrollUp(100, 10)
 	if r.offset != 0 {
 		t.Errorf("上滚不应越界，实际 %d", r.offset)
 	}
-	r.scrollDown(1000)
-	if r.offset != 100 {
-		t.Errorf("下滚不应越界，实际 %d", r.offset)
+	r.scrollDown(1000, 10)
+	if r.offset != 9 {
+		t.Errorf("下滚不应越界到末行 9，实际 %d", r.offset)
+	}
+}
+
+func TestSplitWrapped(t *testing.T) {
+	lines := splitWrapped("hello world\n\nbye", 80)
+	// 应包含 "hello world", "", "bye"
+	if len(lines) < 3 {
+		t.Fatalf("splitWrapped 应保留空行: %v", lines)
+	}
+	if lines[0] != "hello world" || lines[1] != "" || lines[2] != "bye" {
+		t.Errorf("splitWrapped 结果不符: %v", lines)
+	}
+}
+
+func TestReaderCacheHit(t *testing.T) {
+	m := sampleModel()
+	m.articleCache = map[string]string{"https://a.example/1": "cached body text"}
+	// 选中第一条目按 Enter
+	m2, cmd := m.handleListKey(tea.KeyMsg{Type: tea.KeyEnter})
+	m = m2.(Model)
+	if m.view != viewReader {
+		t.Fatal("应进入阅读视图")
+	}
+	// 缓存命中时不应发起 fetch 命令
+	if cmd != nil {
+		t.Error("缓存命中时不应发起抓取")
+	}
+	if m.reader.body != "cached body text" {
+		t.Errorf("应显示缓存正文，实际 %q", m.reader.body)
+	}
+	if len(m.reader.lines) == 0 {
+		t.Error("缓存命中时也应预折行")
 	}
 }
 
@@ -181,8 +216,8 @@ func TestFilterCursorNavigation(t *testing.T) {
 	m = asModel(m.handleListKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}}))
 	// type "ab"
 	m = asModel(m.handleFilterKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a', 'b'}}))
-	if m.filter != "ab" || m.filterCursor != 2 {
-		t.Errorf("输入后 filter=%q cursor=%d", m.filter, m.filterCursor)
+	if string(m.filter) != "ab" || m.filterCursor != 2 {
+		t.Errorf("输入后 filter=%q cursor=%d", string(m.filter), m.filterCursor)
 	}
 	// left arrow
 	m = asModel(m.handleFilterKey(tea.KeyMsg{Type: tea.KeyLeft}))
@@ -191,13 +226,13 @@ func TestFilterCursorNavigation(t *testing.T) {
 	}
 	// insert at cursor
 	m = asModel(m.handleFilterKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}}))
-	if m.filter != "axb" || m.filterCursor != 2 {
-		t.Errorf("插入后 filter=%q cursor=%d", m.filter, m.filterCursor)
+	if string(m.filter) != "axb" || m.filterCursor != 2 {
+		t.Errorf("插入后 filter=%q cursor=%d", string(m.filter), m.filterCursor)
 	}
 	// backspace at cursor
 	m = asModel(m.handleFilterKey(tea.KeyMsg{Type: tea.KeyBackspace}))
-	if m.filter != "ab" || m.filterCursor != 1 {
-		t.Errorf("backspace 后 filter=%q cursor=%d", m.filter, m.filterCursor)
+	if string(m.filter) != "ab" || m.filterCursor != 1 {
+		t.Errorf("backspace 后 filter=%q cursor=%d", string(m.filter), m.filterCursor)
 	}
 	// home
 	m = asModel(m.handleFilterKey(tea.KeyMsg{Type: tea.KeyHome}))
@@ -206,14 +241,14 @@ func TestFilterCursorNavigation(t *testing.T) {
 	}
 	// Ctrl+U (delete to start) — cursor 在 0，无可删内容
 	m = asModel(m.handleFilterKey(tea.KeyMsg{Type: tea.KeyCtrlU}))
-	if m.filter != "ab" || m.filterCursor != 0 {
-		t.Errorf("Ctrl+U 后 filter=%q cursor=%d", m.filter, m.filterCursor)
+	if string(m.filter) != "ab" || m.filterCursor != 0 {
+		t.Errorf("Ctrl+U 后 filter=%q cursor=%d", string(m.filter), m.filterCursor)
 	}
 	// 移动光标到末尾再 Ctrl+U（应清空）
 	m = asModel(m.handleFilterKey(tea.KeyMsg{Type: tea.KeyEnd}))
 	m = asModel(m.handleFilterKey(tea.KeyMsg{Type: tea.KeyCtrlU}))
-	if m.filter != "" || m.filterCursor != 0 {
-		t.Errorf("Ctrl+U at end 后 filter=%q cursor=%d", m.filter, m.filterCursor)
+	if len(m.filter) != 0 || m.filterCursor != 0 {
+		t.Errorf("Ctrl+U at end 后 filter=%q cursor=%d", string(m.filter), m.filterCursor)
 	}
 }
 
@@ -226,8 +261,8 @@ func TestFilterCtrlW(t *testing.T) {
 	}
 	// cursor at end, Ctrl+W deletes "test" (last word)
 	m = asModel(m.handleFilterKey(tea.KeyMsg{Type: tea.KeyCtrlW}))
-	if m.filter != "hello world " || m.filterCursor != 12 {
-		t.Errorf("Ctrl+W 后 filter=%q cursor=%d", m.filter, m.filterCursor)
+	if string(m.filter) != "hello world " || m.filterCursor != 12 {
+		t.Errorf("Ctrl+W 后 filter=%q cursor=%d", string(m.filter), m.filterCursor)
 	}
 }
 
@@ -235,8 +270,108 @@ func TestFilterEscape(t *testing.T) {
 	m := sampleModel()
 	m = asModel(m.handleListKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}}))
 	m = asModel(m.handleFilterKey(tea.KeyMsg{Type: tea.KeyEsc}))
-	if m.view != viewList || m.filter != "" {
-		t.Errorf("Esc 应退出过滤: view=%v filter=%q", m.view, m.filter)
+	if m.view != viewList || len(m.filter) != 0 {
+		t.Errorf("Esc 应退出过滤: view=%v filter=%q", m.view, string(m.filter))
+	}
+}
+
+func TestNextFilterMatch(t *testing.T) {
+	m := sampleModel()
+	// 在 uspolitics tab（2 条：Senate passes bill, Trump signs executive order）
+	// 添加过滤
+	m = asModel(m.handleListKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}}))
+	m = asModel(m.handleFilterKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'T', 'r', 'u', 'm', 'p'}}))
+	m = asModel(m.handleFilterKey(tea.KeyMsg{Type: tea.KeyEnter}))
+
+	// 过滤后仅 1 条（Trump signs executive order），n/N 应循环到自身
+	if len(m.visibleItems()) != 1 {
+		t.Fatalf("过滤后应为 1 条，实际 %d", len(m.visibleItems()))
+	}
+	// n 推进
+	n := nextFilterMatch(m, 0, +1)
+	if n != 0 {
+		t.Errorf("单条时 n 应回到 0，实际 %d", n)
+	}
+	// N 回退
+	n = nextFilterMatch(m, 0, -1)
+	if n != 0 {
+		t.Errorf("单条时 N 应回到 0，实际 %d", n)
+	}
+
+	// 多条：切到 politics tab（1 条），过滤为空时 n/N
+	m2 := sampleModel()
+	m2 = asModel(m2.handleListKey(tea.KeyMsg{Type: tea.KeyTab})) // -> politics
+	m2 = asModel(m2.handleListKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}}))
+	m2 = asModel(m2.handleFilterKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'E', 'U'}}))
+	m2 = asModel(m2.handleFilterKey(tea.KeyMsg{Type: tea.KeyEnter}))
+	// 1 条过滤结果，n/N 循环
+	if nextFilterMatch(m2, 0, +1) != 0 || nextFilterMatch(m2, 0, -1) != 0 {
+		t.Error("1 条时 n/N 应均回 0")
+	}
+
+	// 空过滤
+	m3 := sampleModel()
+	m3 = asModel(m3.handleListKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}}))
+	m3 = asModel(m3.handleFilterKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'z', 'z', 'z'}}))
+	m3 = asModel(m3.handleFilterKey(tea.KeyMsg{Type: tea.KeyEnter}))
+	if len(m3.visibleItems()) != 0 {
+		t.Fatal("应无匹配条目")
+	}
+	// 空时 nextFilterMatch 应保持原 cursor
+	if nextFilterMatch(m3, 5, +1) != 5 {
+		t.Error("空列表时不应改变 cursor")
+	}
+}
+
+func TestMatchFilterChinese(t *testing.T) {
+	// 简繁一致性：搜索简体应找到繁体标题
+	if !matchFilter("國際新聞", "国际") {
+		t.Error("search '国际' should match '國際新聞'")
+	}
+	if !matchFilter("台湾经济", "臺灣經濟") {
+		t.Error("search '臺灣經濟' should match '台湾经济'")
+	}
+	if !matchFilter("选举结果", "選舉") {
+		t.Error("search '選舉' should match '选举结果'")
+	}
+	// 普通英文
+	if !matchFilter("Hello World", "hello") {
+		t.Error("search 'hello' should match 'Hello World'")
+	}
+	// 无匹配
+	if matchFilter("國際新聞", "xyz") {
+		t.Error("search 'xyz' should not match '國際新聞'")
+	}
+}
+
+func TestWrapLinesCJK(t *testing.T) {
+	// CJK 文本不应被截断为非法 UTF-8
+	// 8 字以 4 宽折行
+	input := "台積電擴計畫預計"
+	got := wrapLines(input, 4)
+	// 不应出现替换字符（U+FFFD）
+	if strings.Contains(got, "\ufffd") {
+		t.Errorf("wrapLines 不应产生替换字符: %q", got)
+	}
+	// ceil(8/4) = 2 行
+	lines := strings.Split(strings.TrimRight(got, "\n"), "\n")
+	if len(lines) != 2 {
+		t.Errorf("8 字以 4 宽折行应有 2 行，实际 %d: %q", len(lines), lines)
+	}
+	// 验证每行不超过 4 个 rune
+	for i, line := range lines {
+		if len([]rune(line)) > 4 {
+			t.Errorf("第 %d 行超过 4 字: %q", i+1, line)
+		}
+	}
+}
+
+func TestWrapLinesMixed(t *testing.T) {
+	// 混合中英文 + 换行保留
+	input := "line one\nline two"
+	got := wrapLines(input, 80)
+	if !strings.Contains(got, "line one\nline two") {
+		t.Errorf("wrapLines 应保留换行: %q", got)
 	}
 }
 

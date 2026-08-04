@@ -102,3 +102,29 @@ func TestExtractEmptyPage(t *testing.T) {
 		t.Error("空页面应报错")
 	}
 }
+
+func TestCleanPreservesParagraphs(t *testing.T) {
+	// clean 应压缩空白但保留 \n\n 段落分隔
+	input := "paragraph one.  \n\nparagraph two.\n\n\nparagraph three."
+	got := clean(input)
+	// 应保留段落分隔（\n\n 不变）
+	if !strings.Contains(got, "\n\n") {
+		t.Errorf("clean 应保留段落分隔: %q", got)
+	}
+	// 不应有连续 3 个 \n（多余空白应被压缩）
+	if strings.Contains(got, "\n\n\n") {
+		t.Errorf("clean 不应产生三连换行: %q", got)
+	}
+	// 段落内空白应被压缩
+	if strings.Contains(got, "  ") {
+		t.Errorf("clean 应压缩段内双空格: %q", got)
+	}
+}
+
+func TestCleanPreservesSingleNewline(t *testing.T) {
+	// 单换行视为普通空白，应被压缩
+	got := clean("line one\nline two")
+	if strings.Contains(got, "\n") {
+		t.Errorf("clean 应压缩单换行为空格: %q", got)
+	}
+}

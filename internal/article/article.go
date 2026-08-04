@@ -157,9 +157,13 @@ func fallbackTitle(html string) string {
 	return strings.TrimSpace(doc.Find("title").First().Text())
 }
 
-// clean 压缩空白。
+// clean 压缩空白但保留段落结构（\n\n 分隔）。
 func clean(s string) string {
-	return strings.Join(strings.Fields(s), " ")
+	// 用占位符保护段落分隔，压缩空白后还原
+	s = strings.ReplaceAll(s, "\n\n", "\x00")
+	s = strings.Join(strings.Fields(s), " ")
+	s = strings.ReplaceAll(s, "\x00", "\n\n")
+	return s
 }
 
 func mustURL(s string) *url.URL {

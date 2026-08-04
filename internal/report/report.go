@@ -40,6 +40,14 @@ type Item struct {
 	AgeLabel   string
 }
 
+// Timestamp 返回发布时间的可读格式（"01-02 15:04"），未知时返回 "--"。
+func (i Item) Timestamp() string {
+	if i.Published.IsZero() {
+		return "--"
+	}
+	return i.Published.Format("01-02 15:04")
+}
+
 // SourceStat 是单来源抓取结果统计。
 type SourceStat struct {
 	ID         string

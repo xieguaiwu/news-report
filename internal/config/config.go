@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -50,6 +51,18 @@ type Config struct {
 	CacheTTLMin int                       `yaml:"cache_ttl_minutes"` // 统一覆写 TTL（分钟，0=按层级自动）
 	NoCache     bool                      `yaml:"no_cache"`          // true=禁用缓存（同 --no-cache）
 	Sources     map[string]SourceOverride `yaml:"sources"`
+	LLM         LLMConfig                 `yaml:"llm"` // LLM 集成配置（全部可选）
+}
+
+// LLMConfig 是 LLM（OpenAI 兼容）集成配置段。
+// API key 支持 {env:VAR} 语法，由 Load() 自动解析。
+type LLMConfig struct {
+	BaseURL    string `yaml:"base_url"`    // 默认 https://api.openai.com/v1
+	APIKey     string `yaml:"api_key"`     // 支持 {env:OPENAI_API_KEY}
+	Model      string `yaml:"model"`       // 默认 gpt-4o-mini
+	TargetLang string `yaml:"target_lang"` // 翻译目标语言，默认 zh
+	TimeoutSec int    `yaml:"timeout"`     // 默认 60
+	MaxChars   int    `yaml:"max_chars"`   // 翻译截断字数，默认 4000
 }
 
 // Default 返回内置默认配置。所有字段均有合理值，保证开箱即用。
@@ -78,6 +91,14 @@ func Default() *Config {
 		CacheTTLMin: 0,
 		NoCache:     false,
 		Sources:     map[string]SourceOverride{},
+		LLM: LLMConfig{
+			BaseURL:    "https://api.deepseek.com/v1",
+			APIKey:     "{env:DEEPSEEK_API_KEY}", // 从环境变量读取，不写明文
+			Model:      "deepseek-chat",
+			TargetLang: "zh",
+			TimeoutSec: 60,
+			MaxChars:   4000,
+		},
 	}
 }
 
@@ -109,6 +130,8 @@ func Load(path string) (*Config, error) {
 	if err := yaml.Unmarshal(data, cfg); err != nil {
 		return nil, fmt.Errorf("解析配置 %s: %w", path, err)
 	}
+	// 解析 {env:VAR} 占位符
+	cfg.resolveEnvRefs()
 	return cfg, nil
 }
 
@@ -184,5 +207,32 @@ func (c *Config) Validate() error {
 	if c.LimitPerCat < 0 || c.TotalLimit < 0 {
 		return errors.New("limit_per_category / total_limit 不能为负数")
 	}
+	// llm 段全部可选，只校验已填字段的合法性
+	if c.LLM.TimeoutSec < 0 || c.LLM.TimeoutSec > 300 {
+		return errors.New("llm.timeout 必须在 0-300 之间")
+	}
+	if c.LLM.MaxChars < 0 {
+		return errors.New("llm.max_chars 不能为负数")
+	}
 	return nil
+}
+
+// ── {env:VAR} 解析 ─────────────────────────────────────────────
+
+// envRefRe 匹配 {env:VAR_NAME} 占位符。
+var envRefRe = regexp.MustCompile(`\{env:([A-Za-z_][A-Za-z0-9_]*)\}`)
+
+// resolveEnvRefs 将配置中的 {env:VAR} 占位符替换为环境变量值。
+func (c *Config) resolveEnvRefs() {
+	c.LLM.APIKey = resolveEnv(c.LLM.APIKey)
+	c.LLM.BaseURL = resolveEnv(c.LLM.BaseURL)
+}
+
+// resolveEnv 替换字符串中的 {env:VAR} 占位符。
+func resolveEnv(s string) string {
+	return envRefRe.ReplaceAllStringFunc(s, func(match string) string {
+		// match 格式为 {env:VAR_NAME}
+		varName := match[5 : len(match)-1] // 去掉 {env: 和 }
+		return os.Getenv(varName)
+	})
 }
