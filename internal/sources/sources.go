@@ -158,6 +158,21 @@ func Defaults() []Source {
 			"https://www.ecb.europa.eu/rss/press.xml",
 			"https://www.ecb.europa.eu/rss/press_releases.xml"),
 
+		// ── EN · 教育/人才政策 (specialist) ────────────────────────
+		// 服务于 edu-policy 分类（国际学生/签证/高校/STEM 人才流动），部分源为候选（feed 地址可能变动）
+		src("guardian-education", "The Guardian Education", "en", TierLegacy, false,
+			"https://www.theguardian.com/education/rss"),
+		src("ihe", "Inside Higher Ed", "en", TierSpecialist, true,
+			"https://www.insidehighered.com/rss.xml"),
+		src("pie-news", "The PIE News (国际教育)", "en", TierSpecialist, true,
+			"https://thepienews.com/feed/"),
+		src("theconversation-edu", "The Conversation Education", "en", TierSpecialist, true,
+			"https://theconversation.com/uk/education/articles.atom"),
+		src("hechinger", "The Hechinger Report", "en", TierSpecialist, true,
+			"https://hechingerreport.org/feed/"),
+		src("edsurge", "EdSurge", "en", TierSpecialist, true,
+			"https://www.edsurge.com/articles_rss"),
+
 		// ── DE · 老牌媒体 (legacy) ─────────────────────────────
 		src("dw-en", "Deutsche Welle (EN)", "en", TierLegacy, false,
 			"https://rss.dw.com/rdf/rss-en-all",
@@ -255,6 +270,10 @@ func GoogleNewsFeeds() []Source {
 		"industry": {
 			"semiconductors OR supply chain OR manufacturing",
 			"energy transition OR electric vehicles OR industrial policy",
+		},
+		"edu-policy": {
+			"international students OR student visa OR higher education",
+			"Chinese students OR STEM talent OR university admissions",
 		},
 	}
 	langParam := map[string]struct{ hl, gl string }{

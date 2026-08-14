@@ -77,6 +77,7 @@ type Report struct {
 type Options struct {
 	Languages   []string      // 空 = 全部
 	Categories  []string      // 空 = 全部
+	CatFilter   bool          // true = Categories 作为硬过滤（只输出这些分类，CLI --cat 显式传入时置位）
 	SourceIDs   []string      // 空 = 全部
 	Window      time.Duration // 0 = 不限
 	LimitPerCat int
@@ -181,7 +182,16 @@ func Run(ctx context.Context, cfg *config.Config, fetcher *fetch.Fetcher, opts O
 	for _, c := range opts.Categories {
 		catSet[c] = true
 	}
-	if opts.StrictFocus {
+	if opts.CatFilter {
+		// CLI 显式 --cat：硬过滤，只保留指定分类
+		kept := scoredItems[:0]
+		for _, s := range scoredItems {
+			if catSet[string(s.cat)] {
+				kept = append(kept, s)
+			}
+		}
+		scoredItems = kept
+	} else if opts.StrictFocus {
 		kept := scoredItems[:0]
 		for _, s := range scoredItems {
 			if catSet[string(s.cat)] {

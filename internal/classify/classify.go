@@ -1,5 +1,5 @@
-// Package classify 实现基于关键词的新闻分类：politics（国际政策）/ economy（经济金融）/ industry（产业发展）。
-// 支持 en / de / fr 三种语言，词表按语言独立；带负面词表过滤娱乐/体育等噪音。
+// Package classify 实现基于关键词的新闻分类：politics（国际政策）/ economy（经济金融）/ industry（产业发展）/ edu-policy（教育/人才政策）。
+// 支持 en / de / fr / zh 四种语言，词表按语言独立；带负面词表过滤娱乐/体育等噪音。
 package classify
 
 import (
@@ -12,11 +12,13 @@ func init() {
 	for lang, ks := range sets {
 		ks.politics = normList(ks.politics)
 		ks.uspolitics = normList(ks.uspolitics)
+		ks.eduPolicy = normList(ks.eduPolicy)
 		ks.economy = normList(ks.economy)
 		ks.industry = normList(ks.industry)
 		ks.negative = normList(ks.negative)
 		ks.multiPolitics = normList(ks.multiPolitics)
 		ks.multiUSPolitics = normList(ks.multiUSPolitics)
+		ks.multiEduPolicy = normList(ks.multiEduPolicy)
 		ks.multiEconomy = normList(ks.multiEconomy)
 		ks.multiIndustry = normList(ks.multiIndustry)
 		ks.multiNegative = normList(ks.multiNegative)
@@ -40,22 +42,25 @@ const (
 	Politics   Category = "politics"   // 国际政策
 	Economy    Category = "economy"    // 经济金融
 	Industry   Category = "industry"   // 产业发展
+	EduPolicy  Category = "edu-policy" // 教育/人才政策（国际学生、签证、高校、STEM 人才流动）
 	Other      Category = "other"
 )
 
 // All 是全部专注分类（用于 CLI 校验与默认过滤）。
-var All = []Category{USPolitics, Politics, Economy, Industry}
+var All = []Category{USPolitics, Politics, Economy, Industry, EduPolicy}
 
 // keywordSet 一组分类词表。
 type keywordSet struct {
 	politics   []string // 单 token
 	uspolitics []string
+	eduPolicy  []string // 教育/人才政策（国际学生、签证、实习、高校、STEM 人才）
 	economy    []string
 	industry   []string
 	negative   []string
 	// 多词短语（直接对原文做子串匹配）
 	multiPolitics   []string
 	multiUSPolitics []string
+	multiEduPolicy  []string
 	multiEconomy    []string
 	multiIndustry   []string
 	multiNegative   []string
@@ -69,6 +74,19 @@ var sets = map[string]keywordSet{
 			"republican", "republicans", "democrat", "democrats", "gop", "capitol",
 			"impeachment", "impeach", "federal", "whitehouse", "biden", "trump",
 			"harris", "vance", "houseofrepresentatives",
+		},
+		eduPolicy: []string{
+			// 教育机构/人员
+			"student", "students", "university", "universities", "college", "colleges",
+			"campus", "campuses", "school", "schools", "education", "educational",
+			"scholar", "scholars", "professor", "professors",
+			"faculty", "undergraduate", "undergraduates", "graduate", "graduates",
+			"graduation", "degree", "degrees", "diploma", "curriculum", "tuition",
+			"scholarship", "scholarships", "enroll", "enrolled", "enrollment",
+			"enrolment", "admission", "admissions",
+			// 学生流动/签证/实习/人才
+			"visa", "visas", "intern", "interns", "internship", "internships",
+			"stem", "deport", "deported", "deportation",
 		},
 		politics: []string{
 			"policy", "policies", "government", "parliament", "election", "elections",
@@ -129,6 +147,17 @@ var sets = map[string]keywordSet{
 			"house of representatives", "governor race", "senate race",
 			"congressional hearing", "election denier",
 		},
+		multiEduPolicy: []string{
+			"international student", "international students", "foreign student",
+			"foreign students", "student visa", "student visas", "f-1 visa",
+			"f-1 visas", "visa ban", "visa bans", "visa restrictions",
+			"visa revocation", "visa revocations", "visa revoke", "visa rules",
+			"higher education", "study abroad", "exchange student", "exchange students",
+			"exchange program", "exchange programs", "work permit", "work permits",
+			"brain drain", "talent war", "talent wars", "chinese students",
+			"stem opt", "student protests", "campus protests", "tuition fees",
+			"academic freedom", "enrollment decline", "enrollment drop", "admissions policy",
+		},
 		multiEconomy: []string{
 			"central bank", "federal reserve", "interest rate", "interest rates", "gross domestic product",
 			"consumer prices", "inflation rate", "economic growth", "fiscal policy",
@@ -156,6 +185,13 @@ var sets = map[string]keywordSet{
 		uspolitics: []string{
 			"senat", "kongress", "trump", "biden", "gouverneur",
 			"republikaner", "demokraten", "wahlkampf", "präsidentschaftswahl",
+		},
+		eduPolicy: []string{
+			"studenten", "student", "studierende", "universität", "universitäten",
+			"hochschule", "hochschulen", "studium", "visum", "visa", "bildung",
+			"wissenschaftler", "akademiker", "promotion", "stipendium",
+			"stipendien", "professor", "professoren", "campus", "immatrikulation",
+			"auslandsstudenten", "praktikum", "talent", "abitur", "studienplatz",
 		},
 		politics: []string{
 			"politik", "regierung", "parlament", "wahl", "wahlen", "gipfel",
@@ -210,6 +246,11 @@ var sets = map[string]keywordSet{
 			"oberster gerichtshof", "justizministerium", "mittelfristige wahlen",
 			"us-präsident", "us-präsidenten", "us-regierung", "us-wahl", "us-wahlen",
 		},
+		multiEduPolicy: []string{
+			"internationale studenten", "studentenvisum", "studienvisum",
+			"auslandsstudium", "hochschulbildung", "studierenden", "fachkräftemangel",
+			"braindrain", "talentmangel", "studiengebühren", "studienplatzvergabe",
+		},
 		multiEconomy: []string{
 			"europäische zentralbank", "leitzins", "leitzinsen", "bruttoinlandsprodukt",
 			"verbraucherpreise", "inflationstate", "wirtschaftswachstum",
@@ -234,6 +275,13 @@ var sets = map[string]keywordSet{
 		uspolitics: []string{
 			"congrès", "sénat", "trump", "biden", "gouverneur",
 			"républicains", "démocrates", "midterms",
+		},
+		eduPolicy: []string{
+			"étudiants", "etudiants", "étudiant", "etudiant", "université", "universite",
+			"universités", "universites", "études", "etudes", "visa", "éducation",
+			"education", "scolaire", "campus", "professeur", "professeurs", "faculté",
+			"faculte", "diplôme", "diplome", "bourse", "bourses", "stage", "stages",
+			"stagiaire", "talent", "inscription", "lycée", "lycee", "école", "ecole",
 		},
 		politics: []string{
 			"politique", "politiques", "gouvernement", "parlement", "élection",
@@ -288,6 +336,13 @@ var sets = map[string]keywordSet{
 			"maison blanche", "congrès américain", "sénat américain",
 			"cour suprême", "ministère de la justice", "élections de mi-mandat",
 		},
+		multiEduPolicy: []string{
+			"étudiants étrangers", "etudiants etrangers", "étudiant étranger",
+			"visa étudiant", "visa etudiant", "visas étudiants", "enseignement supérieur",
+			"enseignement superieur", "études à l'étranger", "etudes a l'etranger",
+			"programme d'échange", "programme d'echange", "fuite des cerveaux",
+			"crise des talents", "frais de scolarité", "politique d'admission",
+		},
 		multiEconomy: []string{
 			"banque centrale", "taux d'intérêt", "taux d'intérêts", "produit intérieur brut",
 			"prix à la consommation", "croissance économique", "politique budgétaire",
@@ -317,6 +372,17 @@ var sets = map[string]keywordSet{
 			"聯邦", "联邦", "州長", "州长", "共和黨", "共和党", "民主黨", "民主党",
 			"彈劾", "弹劾", "期中選舉", "中期选举", "初選", "初选", "川普", "特朗普", "拜登",
 			"州議會", "州议会", "國會山", "国会山",
+		},
+		eduPolicy: []string{
+			// 教育机构/人员
+			"學生", "学生", "大學", "大学", "高校", "教育", "校園", "校园", "學校", "学校",
+			"學術", "学术", "學者", "学者", "教授", "教職員", "教职员", "校長", "校长",
+			"招生", "錄取", "录取", "入學", "入学", "畢業", "毕业", "學位", "学位", "文憑",
+			"文凭", "學費", "学费", "獎學金", "奖学金", "課程", "课程", "學制", "学制",
+			"碩士", "硕士", "博士", "本科", "研究生", "大學生", "大学生", "師生", "师生",
+			// 学生流动/签证/实习/人才
+			"留學", "留学", "簽證", "签证", "實習", "实习", "人才", "留學生", "留学生",
+			"交換生", "交换生", "就讀", "就读", "遣返",
 		},
 		politics: []string{
 			"外交", "國際", "国际", "政策", "政府", "總統", "总统", "國會", "国会",
@@ -362,6 +428,14 @@ var sets = map[string]keywordSet{
 		multiUSPolitics: []string{
 			"美國國會", "美国国会", "美國參議院", "美國眾議院", "國務卿", "国务卿",
 			"司法部", "聯邦調查局", "聯邦最高法院", "總統大選", "美國總統",
+		},
+		multiEduPolicy: []string{
+			"學生簽證", "学生签证", "簽證政策", "签证政策", "國際學生", "国际学生",
+			"留學生", "留学生", "中國學生", "中国学生", "美國大學", "美国大学",
+			"高等教育", "出國留學", "出国留学", "留學政策", "留学政策", "學術交流", "学术交流",
+			"交換學生", "交换学生", "實習機會", "实习机会", "實習簽證", "实习签证",
+			"人才流失", "人才爭奪", "人才争夺", "科技人才", "STEM人才", "招生政策",
+			"教育政策", "錄取通知", "录取通知", "簽證限制", "签证限制", "撤銷簽證", "撤销签证",
 		},
 		multiEconomy: []string{
 			"中央銀行", "中央银行", "利率決策", "貨幣政策", "財政政策", "量化寬鬆",
@@ -421,13 +495,16 @@ func Classify(lang, title, summary string) Result {
 
 	tokens := tokenize(text)
 
-	var pol, us, eco, ind, neg int
+	var pol, us, edu, eco, ind, neg int
 	for tok, n := range tokens {
 		if contains(ks.politics, tok) {
 			pol += n
 		}
 		if contains(ks.uspolitics, tok) {
 			us += n * 2 // US 机构/人物词是强信号（senate/congress/trump 几乎不出现于他国语境）
+		}
+		if contains(ks.eduPolicy, tok) {
+			edu += n * 2 // 教育/人才词是强信号（student/visa/university 语境明确）
 		}
 		if contains(ks.economy, tok) {
 			eco += n
@@ -441,7 +518,7 @@ func Classify(lang, title, summary string) Result {
 	}
 	// 中文（zh）：无空格语言，token 化会失败，改用子串匹配（词表均为 2+ 字短语）
 	if lang == "zh" {
-		pol, us, eco, ind, neg = 0, 0, 0, 0, 0
+		pol, us, edu, eco, ind, neg = 0, 0, 0, 0, 0, 0
 		for _, kw := range ks.politics {
 			if strings.Contains(text, kw) {
 				pol++
@@ -450,6 +527,11 @@ func Classify(lang, title, summary string) Result {
 		for _, kw := range ks.uspolitics {
 			if strings.Contains(text, kw) {
 				us += 2
+			}
+		}
+		for _, kw := range ks.eduPolicy {
+			if strings.Contains(text, kw) {
+				edu += 2
 			}
 		}
 		for _, kw := range ks.economy {
@@ -479,6 +561,11 @@ func Classify(lang, title, summary string) Result {
 			us += 4
 		}
 	}
+	for _, p := range ks.multiEduPolicy {
+		if strings.Contains(text, p) {
+			edu += 4
+		}
+	}
 	for _, p := range ks.multiEconomy {
 		if strings.Contains(text, p) {
 			eco += 2
@@ -497,18 +584,27 @@ func Classify(lang, title, summary string) Result {
 
 	best := Other
 	bestScore := 0
-	for _, c := range []struct {
+	candidates := []struct {
 		cat Category
 		sc  int
 	}{
 		// uspolitics 优先：US 专属词命中更多时才归类（避免抢走一般国际政治）
 		{USPolitics, us}, {Politics, pol}, {Economy, eco}, {Industry, ind},
-	} {
+	}
+	// edu-policy 需要 ≥4 分（两个单词或一个多词短语）才参与评选：
+	// 防止“顺带提一句曾是学生/scholar”的传记/历史类新闻误入教育板块
+	if edu >= 4 {
+		candidates = append(candidates, struct {
+			cat Category
+			sc  int
+		}{EduPolicy, edu})
+	}
+	for _, c := range candidates {
 		if c.sc > bestScore {
 			best, bestScore = c.cat, c.sc
 		}
 	}
-	total := pol + eco + ind + us
+	total := pol + eco + ind + us + edu
 	conf := 0.0
 	if total > 0 {
 		conf = float64(bestScore) / float64(total)

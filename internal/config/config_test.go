@@ -14,8 +14,8 @@ func TestDefaultConfig(t *testing.T) {
 	if len(c.Languages) != 4 {
 		t.Errorf("默认语言应为 4 种（en/de/fr/zh），实际 %v", c.Languages)
 	}
-	if len(c.Categories) != 4 || c.Categories[0] != "uspolitics" {
-		t.Errorf("默认分类应为 4 种且 uspolitics 在前，实际 %v", c.Categories)
+	if len(c.Categories) != 5 || c.Categories[0] != "uspolitics" {
+		t.Errorf("默认分类应为 5 种且 uspolitics 在前，实际 %v", c.Categories)
 	}
 	if c.Minutes != 1440 {
 		t.Errorf("默认窗口应为 1440 分钟")

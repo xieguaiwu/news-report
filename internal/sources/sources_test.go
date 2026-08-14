@@ -74,8 +74,8 @@ func TestWeightFor(t *testing.T) {
 func TestGoogleNewsFeeds(t *testing.T) {
 	feeds := GoogleNewsFeeds()
 	// 3 分类 × 3 语言 × 2 查询 = 18 个源
-	if len(feeds) != 18 {
-		t.Fatalf("GoogleNewsFeeds 应为 18 个，实际 %d", len(feeds))
+	if len(feeds) != 24 {
+		t.Fatalf("GoogleNewsFeeds 应为 24 个，实际 %d", len(feeds))
 	}
 	ids := map[string]bool{}
 	for _, f := range feeds {

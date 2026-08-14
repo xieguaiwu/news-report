@@ -27,18 +27,18 @@
 
 | 包 | 职责 | 关键契约 |
 |---|---|---|
-| `internal/config` | 配置加载/校验（默认值 < 用户文件 < CLI） | yaml 只覆盖出现字段；languages ∈ {en,de,fr,zh}；categories ∈ {uspolitics,politics,economy,industry} |
+| `internal/config` | 配置加载/校验（默认值 < 用户文件 < CLI） | yaml 只覆盖出现字段；languages ∈ {en,de,fr,zh}；categories ∈ {uspolitics,politics,economy,industry,edu-policy} |
 | `internal/sources` | 内置来源注册表 | Source{ID,Name,Lang,Tier,Weight,Feeds,Scrape,Optional,Enabled,UserAgent}；`src()` 助手 + 特殊源字面量 |
 | `internal/fetch` | HTTP 获取 | 手动设置 Accept-Encoding 会禁用 Go 自动解压（禁止）；`Bytes`/`BytesUA`/`BytesNoRobots`；robots 按 UA 分组、inflight channel 防并发重复抓取、24h 缓存；`StatusError` 类型化错误 |
 | `internal/feed` | RSS/Atom/RDF 解析 | BOM 剥离；时区缩写偏移表优先于 Go 默认（Go 把未知缩写当 UTC）；`<source>` 元素（Google News）；无 link 时仅回退 http(s) ID |
 | `internal/scrape` | HTML 兜底抓取 | 返回空切片（非 nil）；junkRe 过滤导航/话题页 |
-| `internal/classify` | 四语分类 | zh 走子串匹配（无空格语言）；uspolitics 强信号 ×2、multi ×4；init() 预规范化所有词表 |
+| `internal/classify` | 四语五分类 | zh 走子串匹配（无空格语言）；uspolitics/edu-policy 强信号 ×2、multi ×4；init() 预规范化所有词表；折行/截断/弹窗排版全部按显示列（CJK=2 列） |
 | `internal/dedup` | 去重 | NormalizeTitle 保留拉丁扩展字符 |
 | `internal/rank` | 排序 | Score(weight, kw, categorized, age, halflife) |
 | `internal/store` | 已读记录 | JSON 原子写（tmp+rename）；损坏文件重建 |
 | `internal/article` | 全文提取 | go-readability → goquery 回退 → 付费墙检测（特征≥2 命中） |
 | `internal/gnews` | Google News 搜索 | 引号短语；`<source url>` 域名；个人用途许可（跳过 robots）；gnewsBaseURL 可注入测试 |
-| `internal/tui` | bubbletea 界面 | 模型纯函数可测；每分类 Tab；reader 滚动 |
+| `internal/tui` | bubbletea 界面 | 模型纯函数可测；每分类 Tab；reader 滚动；弹窗叠加层按显示列排版（truncateCells/sliceCells/padCells，CJK 安全） |
 | `internal/output` | 终端/Markdown/JSON | truncate 必须 rune-aware；NO_COLOR 支持 |
 
 ## 数据流
@@ -83,6 +83,24 @@ make smoke         # 真实联网冒烟（6 源）
 - **find 的链接是 Google 跳转链接**：普通 HTTP 跟随停在 SPA，需浏览器/JS 跳转；不实现无头浏览器解码（脆弱且重）
 
 ## 变更日志
+
+### v0.5.1 (2026-08-14)
+- **TUI 排版全面修复（显示宽度感知）**：新增 `wrapCells/truncateCells/padCells/sliceCells/cutCells/popupContentH` 工具，全链路按终端显示列（CJK=2 列）计算
+  - 修复弹窗标题栏用 rune 数计宽导致 CJK 标题下 dash 填充错位
+  - 修复弹窗底图叠加用列宽索引 rune 切片（CJK 底图错位/重叠/ANSI 切坏）
+  - 修复 wrapLines 按 rune 数折行导致中文行宽 2 倍溢出（阅读器/弹窗内容被截）
+  - 修复 helpView `%-*s` 把 ANSI 转义计入宽度导致两列错位
+  - 修复列表/阅读器长标题、长 URL、Tab 行、状态栏溢出硬换行
+  - 弹窗滚动钳位到“最后一行可见”，空 lines 不再产生 offset=-1；LLM 输出 markdown 标记清理（sanitizeLLMText）
+  - 新增 9 个排版单测（弹窗 CJK 边框对齐/阅读器无溢出/帮助对齐/滚动钳位等）
+- **`--cat` 硬过滤**：CLI 显式传 `--cat` 时真正只输出指定分类（此前仅影响排序，与 README “只看” 不符）；新增 CatFilter 选项与回归测试
+
+### v0.5.0 (2026-08-14)
+- 新增 `edu-policy` 分类（教育/人才政策）：国际学生、签证、实习、高校、STEM 人才流动
+  - 四语词表（en/de/fr/zh 繁简双向）+ 多词短语强信号；**阈值 ≥4 分才入选**（防“顺带提一句学生/scholar”类传记新闻误入）
+  - 新增 6 个教育源（全部实测可用）：Guardian Education、Inside Higher Ed、The PIE News、The Conversation Education、Hechinger Report、EdSurge（UWN/Chronicle feed 失效已移除）
+  - Google News 聚合源同步加 edu-policy 查询对（18→24）
+- 输出/TUI 增加 edu-policy 配色（青）与 🎓 图标
 
 ### v0.2.0 (2026-08-03)
 - 新增 `zh` 语言（台湾：中央社×4、自由时报×3）+ 中文四分类词表（繁简）

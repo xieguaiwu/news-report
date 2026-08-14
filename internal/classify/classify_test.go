@@ -79,3 +79,61 @@ func TestClassifyZHNegative(t *testing.T) {
 		t.Errorf("娱乐新闻不应分类为经济/政治: %s", got.Category)
 	}
 }
+
+func TestClassifyEduPolicy(t *testing.T) {
+	cases := []struct {
+		title, summary string
+		want           Category
+	}{
+		{"US to revoke student visas for Chinese nationals", "State Department cites critical fields", EduPolicy},
+		{"Universities see enrollment drop among international students", "Campus officials blame new visa rules", EduPolicy},
+		{"Chinese students face anxious wait for visas under crackdown", "Hundreds of visa applications affected", EduPolicy},
+		{"Talent war: US tech firms compete for STEM graduates", "Internship offers multiply at AI startups", EduPolicy},
+		// 无教育词的新闻不应被抢走
+		{"Trump fires FBI director amid probe", "White House confirms the decision", USPolitics},
+		{"EU leaders agree on new sanctions package", "The European Council approved fresh sanctions", Politics},
+		{"Central bank raises interest rates", "The Fed signals a pause", Economy},
+		// 回归：单个 student/scholar 顺带提及不得进入教育板块（阈值 ≥4）
+		{"Iris Murdoch artworks from secret room go on display", "Second world war paintings show the novelist engaging with her world. The artworks were created when Murdoch was a student at Oxford", Politics},
+		{"Novelist sketched the landscape as a student", "New exhibition of early works", Other},
+	}
+	for _, c := range cases {
+		got := Classify("en", c.title, c.summary)
+		if got.Category != c.want {
+			t.Errorf("Classify(%q) = %s，期望 %s (score=%d)", c.title, got.Category, c.want, got.Score)
+		}
+	}
+}
+
+func TestClassifyEduPolicyZH(t *testing.T) {
+	cases := []struct {
+		title, summary string
+		want           Category
+	}{
+		{"美國擬撤銷中國留學生簽證", "國務院稱涉及關鍵領域 學生簽證收緊", EduPolicy},
+		{"中国留学生在美国实习机会锐减", "科技公司因出口管制审查趋严", EduPolicy},
+		{"大陸高校國際排名上升 留學生選擇增多", "教育政策變化影響赴美意願", EduPolicy},
+		{"台積電先進製程產能滿載", "半導體供應鏈持續擴張", Industry},
+		{"央行宣布升息 抑制通膨", "利率決策委員會一致通過", Economy},
+	}
+	for _, c := range cases {
+		got := Classify("zh", c.title, c.summary)
+		if got.Category != c.want {
+			t.Errorf("ClassifyZH(%q) = %s，期望 %s (score=%d)", c.title, got.Category, c.want, got.Score)
+		}
+	}
+}
+
+func TestClassifyEduPolicyDE(t *testing.T) {
+	got := Classify("de", "US-Pläne gegen chinesische Studenten", "Neue Visa-Regeln für internationale Studenten geplant")
+	if got.Category != EduPolicy {
+		t.Errorf("德语学生签证新闻应分类 edu-policy，实际 %s", got.Category)
+	}
+}
+
+func TestClassifyEduPolicyFR(t *testing.T) {
+	got := Classify("fr", "Les visas étudiants chinois menacés", "Nouvelles restrictions pour les étudiants étrangers")
+	if got.Category != EduPolicy {
+		t.Errorf("法语学生签证新闻应分类 edu-policy，实际 %s", got.Category)
+	}
+}

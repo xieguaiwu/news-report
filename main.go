@@ -171,6 +171,7 @@ func runReport(args []string) {
 	}
 	if *cats != "" {
 		opts.Categories = split(*cats)
+		opts.CatFilter = true // CLI 显式 --cat = 硬过滤（只看这些分类）
 	}
 	if *srcIDs != "" {
 		opts.SourceIDs = split(*srcIDs)

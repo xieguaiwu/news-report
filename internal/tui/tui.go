@@ -13,6 +13,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/mattn/go-runewidth"
 
 	"news-report/internal/article"
 	"news-report/internal/cache"
@@ -46,6 +47,7 @@ var catColor = map[classify.Category]lipgloss.Color{
 	classify.Politics:   lipgloss.Color("39"),
 	classify.Economy:    lipgloss.Color("42"),
 	classify.Industry:   lipgloss.Color("220"),
+	classify.EduPolicy:  lipgloss.Color("45"),
 	classify.Other:      lipgloss.Color("245"),
 }
 
@@ -544,8 +546,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				for i, p := range msg.points {
 					fmt.Fprintf(&sb, "%d. %s\n", i+1, p)
 				}
-				m.popup.content = sb.String()
+				m.popup.content = sanitizeLLMText(sb.String())
 				m.popup.lines = nil // 在 overlayPopup 渲染时按弹窗宽度折行
+				m.popup.offset = 0
 				m.status = "摘要生成完毕"
 			}
 		}
@@ -558,9 +561,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.popup.err = msg.err.Error()
 			} else {
 				b := msg.brief
-				m.popup.content = fmt.Sprintf("## 背景\n%s\n\n## 各方立场\n%s\n\n## 影响\n%s\n\n## 后续关注\n%s",
-					b.Background, b.Positions, b.Impact, b.Outlook)
+				m.popup.content = sanitizeLLMText(fmt.Sprintf("## 背景\n%s\n\n## 各方立场\n%s\n\n## 影响\n%s\n\n## 后续关注\n%s",
+					b.Background, b.Positions, b.Impact, b.Outlook))
 				m.popup.lines = nil // 在 overlayPopup 渲染时按弹窗宽度折行
+				m.popup.offset = 0
 				m.status = "解读生成完毕"
 			}
 		}
@@ -575,31 +579,28 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	// 弹窗优先拦截按键
 	if m.popup != nil {
+		contentH := popupContentH(m.height)
 		switch msg.String() {
 		case "esc", "q":
 			m.popup = nil
 			return m, nil
 		case "up", "k":
-			if m.popup.offset > 0 {
-				m.popup.offset--
-			}
+			popupScroll(m.popup, -1, contentH)
 			return m, nil
 		case "down", "j":
-			if m.popup.offset < len(m.popup.lines)-1 {
-				m.popup.offset++
-			}
+			popupScroll(m.popup, +1, contentH)
 			return m, nil
 		case "pgup":
-			popupScroll(m.popup, -max(1, m.height/2))
+			popupScroll(m.popup, -contentH, contentH)
 			return m, nil
 		case "pgdown", " ":
-			popupScroll(m.popup, max(1, m.height/2))
+			popupScroll(m.popup, +contentH, contentH)
 			return m, nil
 		case "home":
 			m.popup.offset = 0
 			return m, nil
 		case "end":
-			m.popup.offset = max(0, len(m.popup.lines)-1)
+			m.popup.offset = popupMaxOffset(m.popup, contentH)
 			return m, nil
 		}
 		return m, nil
@@ -615,13 +616,28 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 }
 
-func popupScroll(p *popupState, delta int) {
+// popupMaxOffset 返回弹窗可滚动的最大行偏移（最后一行恰好落在窗口底端）。
+func popupMaxOffset(p *popupState, contentH int) int {
+	maxOff := len(p.lines) - contentH
+	if maxOff < 0 {
+		maxOff = 0
+	}
+	return maxOff
+}
+
+// popupScroll 按行滚动弹窗内容，offset 钳位在 [0, 最后一行可见] 区间。
+func popupScroll(p *popupState, delta, contentH int) {
+	if len(p.lines) == 0 {
+		p.offset = 0
+		return
+	}
 	p.offset += delta
+	maxOff := popupMaxOffset(p, contentH)
 	if p.offset < 0 {
 		p.offset = 0
 	}
-	if p.offset >= len(p.lines) {
-		p.offset = len(p.lines) - 1
+	if p.offset > maxOff {
+		p.offset = maxOff
 	}
 }
 
@@ -999,21 +1015,28 @@ func (m Model) View() string {
 
 func (m Model) listView() string {
 	var sb strings.Builder
-	sb.WriteString(styleTitle.Render("📰 news-report") + " " +
-		styleDim.Render(m.rep.Generated.Format("2006-01-02 15:04")+
-			fmt.Sprintf(" ｜ %d 来源 · %d 条", len(m.rep.SourceStats), len(m.rep.Items))) + "\n")
+	titleLine := "📰 news-report " + m.rep.Generated.Format("2006-01-02 15:04") +
+		fmt.Sprintf(" ｜ %d 来源 · %d 条", len(m.rep.SourceStats), len(m.rep.Items))
+	sb.WriteString(styleTitle.Render(truncateCells(titleLine, m.width-2)) + "\n")
 
-	// Tab 行
+	// Tab 行（逐个累计宽度，超出终端宽即截断剩余 Tab，样式完整保留）
+	var tabSB strings.Builder
+	tabW := 0
 	for _, c := range m.cats {
 		label := strings.ToUpper(string(c))
 		tab := fmt.Sprintf(" %s (%d) ", label, m.catCount(c))
-		if c == m.currentCat() {
-			sb.WriteString(styleTabSel.Render(tab))
-		} else {
-			sb.WriteString(styleTab.Render(tab))
+		tw := cellWidth(tab)
+		if tabW+tw > m.width {
+			break
 		}
+		if c == m.currentCat() {
+			tabSB.WriteString(styleTabSel.Render(tab))
+		} else {
+			tabSB.WriteString(styleTab.Render(tab))
+		}
+		tabW += tw
 	}
-	sb.WriteString("\n")
+	sb.WriteString(tabSB.String() + "\n")
 
 	// 条目列表（滚动窗口）
 	items := m.visibleItems()
@@ -1022,12 +1045,27 @@ func (m Model) listView() string {
 		top = 0
 	}
 	bottom := top + m.height - 8
+	// 前缀占位：光标 2 列 + 图标 1 列 + 空格 1 列 = 4 列
+	avail := m.width - 4
+	if avail < 8 {
+		avail = 8
+	}
 	for i, it := range items {
 		if i < top || i > bottom {
 			continue
 		}
-		line := fmt.Sprintf("%s %s%s", catColorIcon(it.Category, "●"), it.Title,
-			styleDim.Render(fmt.Sprintf(" — %s · %s · %s", it.SourceName, it.Timestamp(), strings.ToUpper(it.Lang))))
+		icon := catColorIcon(it.Category, "●")
+		suffix := " — " + it.SourceName + " · " + it.Timestamp() + " · " + strings.ToUpper(it.Lang)
+		suffixW := cellWidth(suffix)
+		titleW := avail - suffixW
+		if titleW < 1 {
+			titleW = 1
+		}
+		title := truncateCells(it.Title, titleW)
+		if suffixW > avail {
+			suffix = truncateCells(suffix, avail)
+		}
+		line := icon + " " + title + styleDim.Render(suffix)
 		if i == m.cursor {
 			sb.WriteString(styleCursor.Render("▸ ") + line + "\n")
 		} else {
@@ -1041,13 +1079,13 @@ func (m Model) listView() string {
 
 	// 状态/帮助栏
 	if m.err != "" {
-		sb.WriteString(styleErr.Render("⚠ "+m.err) + "\n")
+		sb.WriteString(styleErr.Render(truncateCells("⚠ "+m.err, m.width)) + "\n")
 	}
 	if m.status != "" {
-		sb.WriteString(styleDim.Render(m.status) + "\n")
+		sb.WriteString(styleDim.Render(truncateCells(m.status, m.width)) + "\n")
 	}
-	sb.WriteString(styleHelp.Render(
-		"←→ 分类  ↑↓ 选择  Enter 阅读  o 浏览器  c 复制链接  / 搜索  s 导出  r 刷新  q 退出"))
+	sb.WriteString(styleHelp.Render(truncateCells(
+		"←→ 分类  ↑↓ 选择  Enter 阅读  o 浏览器  c 复制链接  / 搜索  s 导出  r 刷新  q 退出", m.width)))
 	return sb.String()
 }
 
@@ -1072,9 +1110,16 @@ func (m Model) readerView() string {
 	}
 	it := m.reader.item
 	var sb strings.Builder
-	sb.WriteString(styleTitle.Render("📄 "+it.Title) + "\n")
-	sb.WriteString(styleDim.Render(fmt.Sprintf("%s · %s · %s ago · %s\n%s\n\n",
-		it.SourceName, strings.ToUpper(it.Lang), it.AgeLabel, it.Published.Format("2006-01-02 15:04"), it.URL)))
+	// 标题/来源行按终端宽度截断（避免长标题/长 URL 硬换行破坏行数计算）
+	titleW := m.width - 2 // styleTitle 左右 padding 各 1
+	if titleW < 10 {
+		titleW = 10
+	}
+	sb.WriteString(styleTitle.Render(truncateCells("📄 "+it.Title, titleW)) + "\n")
+	metaLine1 := fmt.Sprintf("%s · %s · %s ago · %s",
+		it.SourceName, strings.ToUpper(it.Lang), it.AgeLabel, it.Published.Format("2006-01-02 15:04"))
+	sb.WriteString(styleDim.Render(truncateCells(metaLine1, m.width)) + "\n")
+	sb.WriteString(styleDim.Render(truncateCells(it.URL, m.width)) + "\n\n")
 	if m.reader.err != "" {
 		errStr := m.reader.err
 		hint := ""
@@ -1083,7 +1128,7 @@ func (m Model) readerView() string {
 		} else if strings.Contains(errStr, "付费墙") || strings.Contains(errStr, "paywall") {
 			hint = "\n提示：试试 news-report find '标题' 找免费转载"
 		}
-		sb.WriteString(styleErr.Render(errStr+hint) + "\n")
+		sb.WriteString(styleErr.Render(truncateCells(errStr+hint, m.width)) + "\n")
 	}
 	if m.reader.body != "" && len(m.reader.lines) > 0 {
 		// 行级显示：从预折行 lines[offset:] 取 visLines 行
@@ -1106,9 +1151,9 @@ func (m Model) readerView() string {
 		sb.WriteString(styleReader.Render(visible))
 		sb.WriteString("\n")
 	}
-	sb.WriteString(styleHelp.Render("↑↓ 滚动  PgUp/PgDn 翻页  Home/End 首尾  o 浏览器  t 翻译  d 解读  c 复制链接  Esc 返回  q 退出"))
+	sb.WriteString(styleHelp.Render(truncateCells("↑↓ 滚动  PgUp/PgDn 翻页  Home/End 首尾  o 浏览器  t 翻译  d 解读  c 复制链接  Esc 返回  q 退出", m.width)))
 	if m.status != "" {
-		sb.WriteString("\n" + styleDim.Render(m.status))
+		sb.WriteString("\n" + styleDim.Render(truncateCells(m.status, m.width)))
 	}
 	return sb.String()
 }
@@ -1178,9 +1223,9 @@ func readerWidth(termWidth int) int {
 	return w
 }
 
-// splitWrapped 将文本按给定宽度折行后拆分为显示行切片。
+// splitWrapped 将文本按给定显示宽度折行后拆分为显示行切片。
 func splitWrapped(text string, width int) []string {
-	return strings.Split(strings.TrimRight(wrapLines(text, width), "\n"), "\n")
+	return strings.Split(strings.TrimRight(wrapCells(text, width), "\n"), "\n")
 }
 
 // ── 帮助视图 ─────────────────────────────────────────────────
@@ -1204,29 +1249,201 @@ func (m Model) helpView() string {
 		{"PgUp/PgDn / 空格/b", "阅读器翻页"},
 		{"Home/End", "阅读器首/尾"},
 	} {
-		sb.WriteString(fmt.Sprintf("  %-28s %s\n", styleCursor.Render(row[0]), row[1]))
+		key := styleCursor.Render(row[0])
+		// 按显示宽度对齐（ANSI 与 CJK 感知），避免 fmt %-*s 计入转义字节
+		pad := 30 - cellWidth(stripANSI(key))
+		if pad < 1 {
+			pad = 1
+		}
+		sb.WriteString("  " + key + strings.Repeat(" ", pad) + row[1] + "\n")
 	}
 	sb.WriteString("\n按任意键返回\n")
 	return sb.String()
 }
 
-// wrapLines 将长行按指定宽度折行（rune 安全）。
-func wrapLines(text string, width int) string {
-	if width < 3 {
-		return text
+// wrapCells 将长行按指定显示宽度折行（列数感知：CJK 全角=2 列）。
+// ASCII 词优先整词断行；超长词（含长 URL）按列硬断；\t 展开为 4 空格；保留空行。
+func wrapCells(text string, width int) string {
+	if width < 2 {
+		width = 2
 	}
 	var sb strings.Builder
 	for _, line := range strings.Split(text, "\n") {
-		runes := []rune(line)
-		for len(runes) > width {
-			sb.WriteString(string(runes[:width]))
+		line = strings.ReplaceAll(line, "\t", "    ")
+		words := strings.Fields(line)
+		if len(words) == 0 {
 			sb.WriteByte('\n')
-			runes = runes[width:]
+			continue
 		}
-		sb.WriteString(string(runes))
-		sb.WriteByte('\n')
+		var cur strings.Builder
+		curW, first := 0, true
+		flush := func() {
+			if cur.Len() > 0 {
+				sb.WriteString(cur.String())
+				sb.WriteByte('\n')
+				cur.Reset()
+				curW, first = 0, true
+			}
+		}
+		for _, w := range words {
+			wW := cellWidth(w)
+			if wW > width {
+				// 超长词：先冲刷当前行，再按列硬断该词
+				flush()
+				var b strings.Builder
+				bw := 0
+				for _, r := range w {
+					rw := runeCells(r)
+					if bw+rw > width && b.Len() > 0 {
+						sb.WriteString(b.String())
+						sb.WriteByte('\n')
+						b.Reset()
+						bw = 0
+					}
+					b.WriteRune(r)
+					bw += rw
+				}
+				cur = b
+				curW, first = bw, false
+				continue
+			}
+			add := wW
+			if !first {
+				add++ // 空格占 1 列
+			}
+			if curW+add > width {
+				flush()
+				cur.WriteString(w)
+				curW, first = wW, false
+			} else if first {
+				cur.WriteString(w)
+				curW, first = wW, false
+			} else {
+				cur.WriteByte(' ')
+				cur.WriteString(w)
+				curW += add
+			}
+		}
+		flush()
 	}
 	return sb.String()
+}
+
+// ── 单元格宽度感知工具（CJK 全角=2 列，ANSI=0 列） ──────
+
+// cellWidth 返回字符串在终端上占用的显示宽度（列数，ANSI 感知）。
+func cellWidth(s string) int {
+	return lipgloss.Width(s)
+}
+
+// runeCells 返回单个 rune 的显示宽度（控制字符/组合符为 0）。
+func runeCells(r rune) int {
+	w := runewidth.RuneWidth(r)
+	if w < 0 {
+		return 0
+	}
+	return w
+}
+
+// cutCells 返回 s 的前 n 个显示列（rune 边界对齐，结果宽度 ≤ n）。
+func cutCells(s string, n int) string {
+	return sliceCells(s, 0, n)
+}
+
+// sliceCells 返回 s 中显示宽度位于 [from, to) 的子串（rune 边界对齐）。
+// 跨边界的宽字符整体丢弃，保证结果左边界恰好落在 from 列。
+func sliceCells(s string, from, to int) string {
+	if from < 0 {
+		from = 0
+	}
+	if to <= from {
+		return ""
+	}
+	var sb strings.Builder
+	w := 0
+	for _, r := range s {
+		rw := runeCells(r)
+		if rw == 0 {
+			// 零宽字符挂靠当前列
+			if w >= from && w < to {
+				sb.WriteRune(r)
+			}
+			continue
+		}
+		if w >= to {
+			break
+		}
+		if w >= from && w+rw <= to {
+			sb.WriteRune(r)
+		}
+		w += rw
+	}
+	return sb.String()
+}
+
+// truncateCells 将 s 截断到 ≤ maxCells 列并追加省略号（省略号计入宽度）。
+func truncateCells(s string, maxCells int) string {
+	if maxCells < 1 {
+		return ""
+	}
+	if cellWidth(s) <= maxCells {
+		return s
+	}
+	if maxCells == 1 {
+		return "…"
+	}
+	return cutCells(s, maxCells-1) + "…"
+}
+
+// padCells 将 s 补齐/截断到恰好 width 列。
+func padCells(s string, width int) string {
+	t := truncateCells(s, width)
+	rem := width - cellWidth(t)
+	if rem > 0 {
+		t += strings.Repeat(" ", rem)
+	}
+	return t
+}
+
+// sanitizeLLMText 清理 LLM 输出中的 markdown 标记（保留文字与段落结构）。
+func sanitizeLLMText(s string) string {
+	var out []string
+	for _, l := range strings.Split(s, "\n") {
+		l = strings.TrimRight(l, " ")
+		if strings.HasPrefix(strings.TrimSpace(l), "```") {
+			continue // 代码围栏
+		}
+		l = strings.TrimPrefix(l, "### ")
+		l = strings.TrimPrefix(l, "## ")
+		l = strings.TrimPrefix(l, "# ")
+		l = strings.ReplaceAll(l, "**", "")
+		l = strings.ReplaceAll(l, "__", "")
+		l = strings.ReplaceAll(l, "`", "")
+		if strings.HasPrefix(l, "- ") || strings.HasPrefix(l, "* ") {
+			l = "• " + l[2:]
+		}
+		out = append(out, l)
+	}
+	return strings.Join(out, "\n")
+}
+
+// popupContentH 返回弹窗内容区高度（与 overlayPopup 渲染保持一致）。
+func popupContentH(termH int) int {
+	if termH < 6 {
+		termH = 6
+	}
+	ph := termH * 8 / 10
+	if ph < 6 {
+		ph = 6
+	}
+	if ph > termH-2 {
+		ph = termH - 2
+	}
+	contentH := ph - 4
+	if contentH < 1 {
+		contentH = 1
+	}
+	return contentH
 }
 
 // deleteWordBackward 删前一词（rune 版）。
@@ -1338,6 +1555,7 @@ func openBrowser(url string) {
 
 // overlayPopup 将弹窗叠加在基础视图之上。
 // 弹窗居中显示，带边框和标题，可滚动，半透明背景遮罩。
+// 全部宽度计算基于显示列数（CJK=2 列）；底图先剥 ANSI 再按列切片，避免错位。
 func overlayPopup(base string, p *popupState, termW, termH int) string {
 	if termW < 20 {
 		termW = 20
@@ -1354,38 +1572,37 @@ func overlayPopup(base string, p *popupState, termW, termH int) string {
 	if pw > termW-4 {
 		pw = termW - 4
 	}
-	ph := termH * 8 / 10
-	if ph < 6 {
-		ph = 6
-	}
-	if ph > termH-2 {
-		ph = termH - 2
-	}
 	contentW := pw - 4 // 内容区宽度（-4 = │ + 空格 + ... + 空格 + │）
+	contentH := popupContentH(termH)
 
-	// 预折行：按弹窗内容宽度重新折行
+	// 预折行：按弹窗内容宽度（列数感知）重新折行
 	var lines []string
-	if p.loading || p.err != "" || len(p.content) == 0 {
-		lines = nil
-	} else if len(p.lines) > 0 {
-		lines = p.lines
-	} else {
+	if p.loading || p.err != "" || p.content == "" {
+		p.lines = nil
+	} else if len(p.lines) == 0 {
 		lines = splitWrapped(p.content, contentW)
-	}
-	if len(lines) > 0 {
 		p.lines = lines
+	} else {
+		lines = p.lines
+	}
+
+	// 滚动偏移 clamp 到可见窗口
+	maxOff := len(lines) - contentH
+	if maxOff < 0 {
+		maxOff = 0
+	}
+	if p.offset > maxOff {
+		p.offset = maxOff
+	}
+	if p.offset < 0 {
+		p.offset = 0
 	}
 
 	var popupSB strings.Builder
 
-	// 标题栏
-	title := p.title
-	titleRunes := []rune(title)
-	titleW := len(titleRunes)
-	if titleW > contentW-3 {
-		title = string(titleRunes[:contentW-3]) + "…"
-		titleW = len([]rune(title))
-	}
+	// 标题栏：┌─ 标题 ────────┐（全宽 = contentW+4，列数感知）
+	title := truncateCells(p.title, contentW-1)
+	titleW := cellWidth(title)
 	popupSB.WriteString("┌─ " + title + " ")
 	dashRemain := contentW - titleW - 1
 	if dashRemain < 0 {
@@ -1393,35 +1610,16 @@ func overlayPopup(base string, p *popupState, termW, termH int) string {
 	}
 	popupSB.WriteString(strings.Repeat("─", dashRemain) + "┐\n")
 
-	// 画一行（自动补齐到 contentW 宽，超长截断）
+	// 画一行（按显示列截断 + 补齐到 contentW，保证右边界对齐）
 	drawLine := func(text string) {
-		// Bug2: 文本超过 contentW 时截断，防止撑破边框
-		tw := lipgloss.Width(text)
-		if tw > contentW {
-			runes := []rune(text)
-			var w int
-			for i, r := range runes {
-				rw := lipgloss.Width(string(r))
-				if w+rw > contentW {
-					text = string(runes[:i])
-					break
-				}
-				w += rw
-			}
-			tw = lipgloss.Width(text)
-		}
+		t := truncateCells(text, contentW)
 		popupSB.WriteString("│ ")
-		popupSB.WriteString(text)
-		rem := contentW - tw
+		popupSB.WriteString(t)
+		rem := contentW - cellWidth(t)
 		if rem > 0 {
 			popupSB.WriteString(strings.Repeat(" ", rem))
 		}
 		popupSB.WriteString(" │\n")
-	}
-
-	contentH := ph - 4
-	if contentH < 1 {
-		contentH = 1
 	}
 
 	if p.loading {
@@ -1433,11 +1631,7 @@ func overlayPopup(base string, p *popupState, termW, termH int) string {
 			}
 		}
 	} else if p.err != "" {
-		errText := "错误: " + p.err
-		if len([]rune(errText)) > contentW {
-			errText = string([]rune(errText)[:contentW])
-		}
-		drawLine(errText)
+		drawLine("错误: " + p.err)
 		for i := 1; i < contentH; i++ {
 			drawLine("")
 		}
@@ -1446,17 +1640,13 @@ func overlayPopup(base string, p *popupState, termW, termH int) string {
 		if start < 0 {
 			start = 0
 		}
-		if start >= len(lines) {
-			start = len(lines) - 1
+		if start > maxOff {
+			start = maxOff
 		}
 		for i := 0; i < contentH; i++ {
 			li := start + i
 			if li < len(lines) {
-				line := lines[li]
-				if len([]rune(line)) > contentW {
-					line = string([]rune(line)[:contentW-1]) + "…"
-				}
-				drawLine(line)
+				drawLine(lines[li])
 			} else {
 				drawLine("")
 			}
@@ -1470,10 +1660,10 @@ func overlayPopup(base string, p *popupState, termW, termH int) string {
 	// 底部帮助
 	drawLine("Esc 关闭  ↑↓ 滚动  PgUp/PgDn 翻页")
 
-	// 底边框（Bug3: 补齐为 contentW+4，与标题栏和内容行对齐）
+	// 底边框（全宽 = contentW+4，与标题栏和内容行对齐）
 	popupSB.WriteString("└" + strings.Repeat("─", contentW+2) + "┘\n")
 
-	popup := popupSB.String()
+	popup := strings.TrimRight(popupSB.String(), "\n")
 	popupLines := strings.Split(popup, "\n")
 	baseLines := strings.Split(base, "\n")
 
@@ -1492,20 +1682,20 @@ func overlayPopup(base string, p *popupState, termW, termH int) string {
 			popupLine := popupLines[row-startRow]
 			var lineSB strings.Builder
 			if row < len(baseLines) {
-				baseRunes := []rune(baseLines[row])
-				if startCol > 0 && startCol < len(baseRunes) {
-					lineSB.WriteString(styleDim.Render(string(baseRunes[:startCol])))
-				} else if startCol > 0 {
-					lineSB.WriteString(styleDim.Render(strings.Repeat(" ", startCol)))
+				// 底图行：先剥 ANSI 再做列级切片（CJK 安全），左右残段统一调暗
+				plain := stripANSI(baseLines[row])
+				left := padCells(cutCells(plain, startCol), startCol)
+				rightStart := startCol + cellWidth(popupLine)
+				right := ""
+				if rightStart < cellWidth(plain) {
+					right = sliceCells(plain, rightStart, cellWidth(plain))
 				}
+				lineSB.WriteString(styleDim.Render(left))
 				lineSB.WriteString(popupLine)
-				rightStart := startCol + lipgloss.Width(popupLine)
-				if rightStart < len(baseRunes) {
-					lineSB.WriteString(styleDim.Render(string(baseRunes[rightStart:])))
-				}
+				lineSB.WriteString(styleDim.Render(right))
 			} else {
 				if startCol > 0 {
-					lineSB.WriteString(styleDim.Render(strings.Repeat(" ", startCol)))
+					lineSB.WriteString(strings.Repeat(" ", startCol))
 				}
 				lineSB.WriteString(popupLine)
 			}
@@ -1518,4 +1708,3 @@ func overlayPopup(base string, p *popupState, termW, termH int) string {
 	}
 	return resultSB.String()
 }
-

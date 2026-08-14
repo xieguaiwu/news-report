@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -344,34 +345,280 @@ func TestMatchFilterChinese(t *testing.T) {
 	}
 }
 
-func TestWrapLinesCJK(t *testing.T) {
+func TestWrapCellsCJK(t *testing.T) {
 	// CJK 文本不应被截断为非法 UTF-8
-	// 8 字以 4 宽折行
+	// 8 个字 = 16 列，按 4 列折行 → 每行 2 个字，共 4 行
 	input := "台積電擴計畫預計"
-	got := wrapLines(input, 4)
-	// 不应出现替换字符（U+FFFD）
+	got := wrapCells(input, 4)
 	if strings.Contains(got, "\ufffd") {
-		t.Errorf("wrapLines 不应产生替换字符: %q", got)
+		t.Errorf("wrapCells 不应产生替换字符: %q", got)
 	}
-	// ceil(8/4) = 2 行
 	lines := strings.Split(strings.TrimRight(got, "\n"), "\n")
-	if len(lines) != 2 {
-		t.Errorf("8 字以 4 宽折行应有 2 行，实际 %d: %q", len(lines), lines)
+	if len(lines) != 4 {
+		t.Fatalf("8 字 16 列按 4 列折行应有 4 行，实际 %d: %q", len(lines), lines)
 	}
-	// 验证每行不超过 4 个 rune
 	for i, line := range lines {
-		if len([]rune(line)) > 4 {
-			t.Errorf("第 %d 行超过 4 字: %q", i+1, line)
+		if cellWidth(line) > 4 {
+			t.Errorf("第 %d 行超过 4 列: %q (%d 列)", i+1, line, cellWidth(line))
 		}
 	}
 }
 
-func TestWrapLinesMixed(t *testing.T) {
+func TestWrapCellsMixed(t *testing.T) {
 	// 混合中英文 + 换行保留
 	input := "line one\nline two"
-	got := wrapLines(input, 80)
+	got := wrapCells(input, 80)
 	if !strings.Contains(got, "line one\nline two") {
-		t.Errorf("wrapLines 应保留换行: %q", got)
+		t.Errorf("wrapCells 应保留换行: %q", got)
+	}
+	// 中文+英文混合折行：宽度 8 列，"hello " 6 列 + 你 2 列 = 8
+	lines := splitWrapped("hello 你好世界", 8)
+	if len(lines) != 2 || lines[0] != "hello" || lines[1] != "你好世界" {
+		t.Errorf("混合折行错误: %v", lines)
+	}
+}
+
+func TestWrapCellsLongWord(t *testing.T) {
+	// 超长词（如 URL）按列硬断
+	lines := splitWrapped("https://example.com/a/really/long/path", 10)
+	if len(lines) < 4 {
+		t.Fatalf("长 URL 应硬断多行，实际 %d: %v", len(lines), lines)
+	}
+	for _, l := range lines {
+		if cellWidth(l) > 10 {
+			t.Errorf("硬断行超宽: %q (%d 列)", l, cellWidth(l))
+		}
+	}
+}
+
+func TestTruncateCells(t *testing.T) {
+	cases := []struct {
+		in   string
+		max  int
+		want string
+	}{
+		{"hello", 5, "hello"},
+		{"hello", 4, "hel…"},
+		{"你好世界", 5, "你好…"}, // 你好=4列 + …=1列
+		{"你好世界", 6, "你好…"}, // 世=2列放不下，让位省略号
+		{"ab", 1, "…"},
+		{"a", 1, "a"},
+		{"", 5, ""},
+	}
+	for _, c := range cases {
+		got := truncateCells(c.in, c.max)
+		if got != c.want {
+			t.Errorf("truncateCells(%q, %d) = %q，期望 %q", c.in, c.max, got, c.want)
+		}
+		if cellWidth(got) > c.max {
+			t.Errorf("truncateCells(%q, %d) 结果超宽: %q (%d 列)", c.in, c.max, got, cellWidth(got))
+		}
+	}
+}
+
+func TestSliceCells(t *testing.T) {
+	cases := []struct {
+		s        string
+		from, to int
+		want     string
+	}{
+		{"abc", 1, 3, "bc"},
+		{"你a好", 0, 2, "你"},  // 你占 0-2 列
+		{"你a好", 2, 3, "a"},  // a 占 2-3 列
+		{"你a好", 2, 5, "a好"}, // a + 好(2列)
+		{"你a好", 1, 4, "a"},  // 跨边界的 你 整体丢弃
+		{"你好世界", 0, 3, "你"}, // 3 列内只放得下 你(2列)
+		{"", 0, 5, ""},
+		{"abc", 5, 10, ""},
+	}
+	for _, c := range cases {
+		got := sliceCells(c.s, c.from, c.to)
+		if got != c.want {
+			t.Errorf("sliceCells(%q, %d, %d) = %q，期望 %q", c.s, c.from, c.to, got, c.want)
+		}
+	}
+}
+
+func TestPadCells(t *testing.T) {
+	if got := padCells("你好", 6); cellWidth(got) != 6 || !strings.HasSuffix(got, "  ") {
+		t.Errorf("padCells(你好, 6) = %q (%d 列)", got, cellWidth(got))
+	}
+	if got := padCells("abcdef", 4); got != "abc…" {
+		t.Errorf("padCells 超长应截断: %q", got)
+	}
+}
+
+func TestSanitizeLLMText(t *testing.T) {
+	in := "## 背景\n**要点一**\n- 项目A\n- 项目B\n```\ncode\n```\n`引用`"
+	got := sanitizeLLMText(in)
+	for _, bad := range []string{"##", "**", "```", "`"} {
+		if strings.Contains(got, bad) {
+			t.Errorf("sanitizeLLMText 未清除 %q: %q", bad, got)
+		}
+	}
+	if !strings.Contains(got, "背景\n要点一\n• 项目A\n• 项目B") {
+		t.Errorf("sanitizeLLMText 结构错误: %q", got)
+	}
+}
+
+// TestOverlayPopupCJKAlignment 验证弹窗在 CJK 底图/标题下边框对齐、行宽不超终端。
+func TestOverlayPopupCJKAlignment(t *testing.T) {
+	base := "📰 news-report 2026-08-14 ｜ 3 来源 · 4 条\n" +
+		" USPOLITICS (2)  POLITICS (1)\n" +
+		"● 美国参议院通过重大预算改革法案 — NPR · 2h · EN\n" +
+		"● 台積電擴產計畫正式啟動 — 中央社 · 1h · ZH\n" +
+		"● EU approves new sanctions package — BBC · 3h · EN\n"
+	p := &popupState{
+		title:   "解读: 美国政府对中国留学生实习限制升级 科技公司纷纷调整招聘政策",
+		content: "## 背景\n美国国务院宣布将积极撤销部分中国学生签证。\n\n## 影响\n科技公司实习岗位招聘收紧，芯片与AI领域最明显。\n",
+	}
+	termW, termH := 60, 20
+	out := overlayPopup(base, p, termW, termH)
+	rows := strings.Split(strings.TrimRight(out, "\n"), "\n")
+	// 弹窗行数 = 标题 1 + 内容 contentH + 帮助 1 + 底边 1；底图不足行时末尾空行被 Trim 掉
+	if len(rows) > termH {
+		t.Fatalf("输出行数 %d 超过终端 %d", len(rows), termH)
+	}
+	popupRowCount := 0
+	for _, row := range rows {
+		if strings.ContainsAny(stripANSI(row), "┌│└") {
+			popupRowCount++
+		}
+	}
+	wantPopupRows := 1 + popupContentH(termH) + 2
+	if popupRowCount != wantPopupRows {
+		t.Fatalf("弹窗应有 %d 行，实际 %d", wantPopupRows, popupRowCount)
+	}
+
+	// 弹窗宽度：70% of 60 = 42 列，居中 startCol = 9
+	pw := 42
+	startCol := (termW - pw) / 2
+	var popupLeft, popupRight int
+	found := false
+	for _, row := range rows {
+		plain := stripANSI(row)
+		if w := cellWidth(plain); w > termW {
+			t.Errorf("行宽 %d 超过终端 %d: %q", w, termW, plain)
+		}
+		hasLeft := strings.ContainsAny(plain, "┌│└")
+		hasRight := strings.ContainsAny(plain, "┐│┘")
+		if hasLeft && hasRight {
+			// IndexAny 返回字节偏移，须换算为显示列
+			l := cellWidth(plain[:strings.IndexAny(plain, "┌│└")])
+			r := cellWidth(plain[:strings.LastIndexAny(plain, "┐│┘")])
+			if !found {
+				popupLeft, popupRight, found = l, r, true
+			}
+			if l != popupLeft || r != popupRight {
+				t.Errorf("弹窗边框未对齐: 左 %d/%d 右 %d/%d 行=%q", l, popupLeft, r, popupRight, plain)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("未找到弹窗边框行")
+	}
+	if popupLeft != startCol || popupRight-popupLeft+1 != pw {
+		t.Errorf("弹窗位置/宽度错误: 左=%d 右=%d（期望左=%d 宽=%d）", popupLeft, popupRight, startCol, pw)
+	}
+	// 标题栏内 dash 填充必须恰好到达 ┐ 前一列
+	for _, row := range rows {
+		plain := stripANSI(row)
+		if strings.Contains(plain, "┌") && strings.Contains(plain, "┐") {
+			if got := cellWidth(plain[:strings.Index(plain, "┐")+1]); got != popupRight+1 {
+				t.Errorf("标题栏宽度错误 %d != %d: %q", got, popupRight+1, plain)
+			}
+		}
+	}
+}
+
+// TestOverlayPopupOffsetClamp 验证滚动偏移渲染时被钳位。
+func TestOverlayPopupOffsetClamp(t *testing.T) {
+	var lines []string
+	for i := 0; i < 30; i++ {
+		lines = append(lines, fmt.Sprintf("第 %d 行", i))
+	}
+	p := &popupState{title: "T", content: strings.Join(lines, "\n"), lines: lines, offset: 25}
+	// 渲染后 offset 应被钳位到 len(30)-contentH
+	out := overlayPopup("base\n", p, 60, 20)
+	_ = out
+	// contentH: ph=16, contentH=12 → maxOff=18
+	if p.offset != 18 {
+		t.Errorf("offset 应钳位到 18，实际 %d", p.offset)
+	}
+}
+
+func TestPopupScrollClamp(t *testing.T) {
+	p := &popupState{lines: nil}
+	popupScroll(p, 5, 10)
+	if p.offset != 0 {
+		t.Errorf("空 lines 时 offset 应为 0，实际 %d", p.offset)
+	}
+	p.lines = make([]string, 20)
+	popupScroll(p, 100, 10)
+	if p.offset != 10 {
+		t.Errorf("下滚应钳位到 20-10=10，实际 %d", p.offset)
+	}
+	popupScroll(p, -100, 10)
+	if p.offset != 0 {
+		t.Errorf("上滚应钳位到 0，实际 %d", p.offset)
+	}
+	if got := popupMaxOffset(p, 10); got != 10 {
+		t.Errorf("popupMaxOffset 应为 10，实际 %d", got)
+	}
+	p.lines = make([]string, 5)
+	if got := popupMaxOffset(p, 10); got != 0 {
+		t.Errorf("内容不足一屏时 maxOffset 应为 0，实际 %d", got)
+	}
+}
+
+// TestReaderViewNoOverflow 验证窄终端下阅读器所有行不超终端宽度。
+func TestReaderViewNoOverflow(t *testing.T) {
+	m := sampleModel()
+	m.width, m.height = 40, 20
+	longTitle := "美国政府对中国留学生的实习签证限制持续升级引发科技行业广泛担忧"
+	longURL := "https://example.com/very/long/path/to/an/article/page"
+	body := "中文正文內容重複中文正文內容重複中文正文內容重複中文正文內容重複中文正文內容"
+	m.view = viewReader
+	m.reader = &readerState{
+		item:  &report.Item{Title: longTitle, URL: longURL, SourceName: "中央社", Lang: "zh", AgeLabel: "2h", Published: time.Now()},
+		body:  body,
+		lines: splitWrapped(body, readerWidth(m.width)),
+	}
+	v := m.View()
+	for _, row := range strings.Split(strings.TrimRight(v, "\n"), "\n") {
+		plain := stripANSI(row)
+		if w := cellWidth(plain); w > m.width {
+			t.Errorf("阅读器行宽 %d 超过终端 %d: %q", w, m.width, plain)
+		}
+	}
+}
+
+// TestHelpViewAlign 验证帮助视图两列对齐（ANSI 不参与宽度计算）。
+func TestHelpViewAlign(t *testing.T) {
+	m := sampleModel()
+	m.width, m.height = 80, 30
+	m.showHelp = true
+	v := m.View()
+	rows := strings.Split(strings.TrimRight(v, "\n"), "\n")
+	descs := []string{"切换分类", "选择条目", "阅读全文", "搜索过滤", "浏览器打开", "翻译当前正文",
+		"生成 5 点摘要", "深度解读", "导出当前分类", "重新抓取", "本帮助", "阅读器翻页", "阅读器首/尾"}
+	var cols []int
+	for _, desc := range descs {
+		for _, row := range rows {
+			plain := stripANSI(row)
+			if i := strings.Index(plain, desc); i >= 0 {
+				cols = append(cols, cellWidth(plain[:i]))
+				break
+			}
+		}
+	}
+	if len(cols) < 5 {
+		t.Fatalf("找到的帮助行数不足: %d", len(cols))
+	}
+	for _, c := range cols[1:] {
+		if c != cols[0] {
+			t.Errorf("帮助描述列未对齐: %d != %d", c, cols[0])
+		}
 	}
 }
 

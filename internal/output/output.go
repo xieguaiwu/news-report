@@ -25,17 +25,19 @@ const (
 )
 
 var catColor = map[classify.Category]string{
-	classify.Politics: cBlue,
-	classify.Economy:  cGreen,
-	classify.Industry: cYellow,
-	classify.Other:    cGray,
+	classify.Politics:  cBlue,
+	classify.Economy:   cGreen,
+	classify.Industry:  cYellow,
+	classify.EduPolicy: cCyan,
+	classify.Other:     cGray,
 }
 
 var catIcon = map[classify.Category]string{
-	classify.Politics: "🏛",
-	classify.Economy:  "📈",
-	classify.Industry: "🏭",
-	classify.Other:    "•",
+	classify.Politics:  "🏛",
+	classify.Economy:   "📈",
+	classify.Industry:  "🏭",
+	classify.EduPolicy: "🎓",
+	classify.Other:     "•",
 }
 
 // Terminal 输出彩色终端报告。

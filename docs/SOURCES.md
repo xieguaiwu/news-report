@@ -42,6 +42,19 @@
 | eia | 美国能源署 | robots 自禁 /rss | ⚠️ --no-robots |
 | imf / fed / ecb | IMF/美联储/ECB | 各官网 | ⚠️ imf/ecb 候选 |
 
+## EN · 教育/人才政策（edu-policy 分类专属）
+
+| ID | 来源 | Feed | 状态 |
+|---|---|---|---|
+| guardian-education | The Guardian Education | theguardian.com/education/rss | ✅ 免费 |
+| ihe | Inside Higher Ed（美国高教） | insidehighered.com/rss.xml | ✅ 实测 |
+| pie-news | The PIE News（国际教育） | thepienews.com/feed | ✅ 实测 |
+| theconversation-edu | The Conversation Education | theconversation.com/uk/education/articles.atom | ✅ 实测 |
+| hechinger | The Hechinger Report | hechingerreport.org/feed | ✅ 实测 |
+| edsurge | EdSurge | edsurge.com/articles_rss | ✅ 实测 |
+
+> 已移除：University World News（/rss 404）、Chronicle of Higher Education（/rss 返回 HTML 无条目）。
+
 ## DE · 老牌媒体（legacy）
 
 | ID | 来源 | Feed | 状态 |

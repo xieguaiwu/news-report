@@ -101,6 +101,26 @@ func TestRunPipeline(t *testing.T) {
 	}
 }
 
+func TestRunCatFilter(t *testing.T) {
+	s1, s2 := testServers(t)
+	defer s1.Close()
+	defer s2.Close()
+
+	cfg := cfgWithOnly(t, "bbc-world", "guardian-world")
+	cfg.Sources["bbc-world"] = config.SourceOverride{Feeds: []string{s1.URL}}
+	cfg.Sources["guardian-world"] = config.SourceOverride{Feeds: []string{s2.URL}}
+
+	fetcher := fetch.New(fetch.Options{Timeout: 5 * time.Second, Retries: 0, NoRobots: true})
+	// CLI --cat 语义：硬过滤，只保留 politics
+	rep, err := Run(context.Background(), cfg, fetcher, Options{Categories: []string{"politics"}, CatFilter: true})
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if len(rep.Items) != 1 || rep.Items[0].Category != classify.Politics {
+		t.Errorf("CatFilter 应只剩 1 条 politics，实际 %d: %+v", len(rep.Items), rep.Items)
+	}
+}
+
 func TestRunStrictFocus(t *testing.T) {
 	s1, s2 := testServers(t)
 	defer s1.Close()

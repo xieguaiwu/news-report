@@ -1,6 +1,6 @@
 # news-report · 欧美权威媒体新闻聚合器
 
-自动从 **欧美权威新闻媒体**（英/德/法/中文四语）抓取最新资讯，专注 **美国政治 · 国际政策 · 经济形势 · 产业发展** 四大领域。
+自动从 **欧美权威新闻媒体**（英/德/法/中文四语）抓取最新资讯，专注 **美国政治 · 国际政策 · 经济形势 · 产业发展 · 教育/人才政策** 五大领域。
 
 [English](README_EN.md)
 
@@ -11,8 +11,9 @@
   - `legacy` 老牌媒体：BBC、卫报、纽约时报、WSJ、华盛顿邮报、Le Monde、Le Figaro、FAZ、Die Zeit、Spiegel、Handelsblatt、Süddeutsche、DW、France 24、中央社、自由时报…
   - `specialist` 机构智库：IMF、美联储、ECB、联合国新闻、EIA、布鲁金斯、CFR、PIIE、CSIS、Chatham House、Politico EU、EURACTIV、NPR、Roll Call…
   - 可选 `--google-news` 聚合源（额外广度）
-- **四语分类引擎**：uspolitics / politics / economy / industry 关键词分类
+- **四语五分类引擎**：uspolitics / politics / economy / industry / edu-policy 关键词分类
   - en/de/fr 独立词表 + **中文词表**（繁简双向，子串匹配适配无空格语言）
+  - edu-policy 覆盖国际学生/签证/实习/高校/STEM 人才流动（中关学生签证限制等）
   - 美国政治专属词（senate/congress/白宮/參議院…）强信号权重，自动区分美国本国政治与国际政策
 - **出色的网页信息获取能力**
   - RSS 2.0 / Atom / RDF 自动识别（含 UTF-8 BOM 剥离），多候选 feed 依次尝试
@@ -21,6 +22,8 @@
   - gzip、重定向、指数退避重试（4xx 不重试）、UA 可配、robots.txt 尊重（按 UA 分组）
 - **付费墙解决方案**：`find` 子命令按标题短语搜索 Google News，列出免费转载/镜像候选（含原站域名标记）
 - **交互式 TUI**：`ui` 子命令——分类 Tab 导航、键盘选择、Enter 全文阅读、`o` 浏览器打开、`/` 搜索过滤、`s` 导出 Markdown
+  - **AI 解读**（配置 `llm.api_key` 后可用）：`t` 全文翻译、`x` 五点摘要、`d` 深度解读（弹窗叠加层）
+  - 弹窗/阅读器全链路**显示宽度感知排版**：CJK 全角按 2 列计算，任意终端尺寸下边框对齐、不溢出
 - **智能去重**：规范化标题 + Jaccard 相似度聚类（跨语言阈值自适应）
 - **新鲜度排序**：来源权重 × 指数衰减（半衰期可配）+ 相关性加分
 - **已读记录**：JSON 缓存，重复运行只报新条目；`--show-seen` 可回看
@@ -42,6 +45,7 @@ news-report ui                           # 交互式界面（←→ 切分类，
 news-report read <url> --lang de         # 深度阅读单篇文章
 news-report find "EU sanctions Russia"   # 付费墙文章找免费转载
 news-report --out markdown --outfile report.md
+news-report --cat edu-policy --lang en,zh      # 只看教育/人才政策（国际学生/签证/实习）
 news-report --strict                     # 只显示专注分类
 news-report --lang zh,en --cat uspolitics # 只看中美政治
 news-report --fulltext 3                 # 每类 Top-3 抓取全文
@@ -65,6 +69,9 @@ news-report init                         # 生成默认配置
 | `←`/`→` 或 `Tab` | 切换分类 |
 | `↑`/`↓` 或 `j`/`k` | 移动选择 |
 | `Enter` | 抓取并阅读全文（`Esc` 返回） |
+| `t` | AI 翻译当前正文（再按恢复原文；需配置 llm.api_key） |
+| `x` | 列表视图：AI 生成 5 点摘要（弹窗显示） |
+| `d` | 阅读器视图：AI 深度解读（弹窗显示） |
 | `o` | 浏览器打开当前条目 |
 | `/` | 标题/来源过滤 |
 | `s` | 导出当前分类为 Markdown |
@@ -92,7 +99,7 @@ news-report find "EU sanctions package Russia" --lang en --limit 8
 
 ```yaml
 languages: [en, de, fr, zh]      # 语言
-categories: [uspolitics, politics, economy, industry]  # 分类（顺序即报告顺序）
+categories: [uspolitics, politics, economy, industry, edu-policy]  # 分类（顺序即报告顺序）
 minutes: 1440                    # 新鲜度窗口（分钟）
 limit_per_category: 12
 total_limit: 80
@@ -113,13 +120,18 @@ sources:
     enabled: true
     weight: 0.9
     # feeds: [自定义 URL 列表]
+llm:                              # 可选：AI 翻译/摘要/解读（t / x / d 键）
+  api_key: "{env:DEEPSEEK_API_KEY}"   # 支持 {env:VAR} 环境变量引用
+  base_url: https://api.deepseek.com/v1
+  model: deepseek-chat
+  target_lang: zh                  # 翻译目标语言
 ```
 
 ## 消息源一览（65+）
 
 | 语言 | 通讯社 (wire) | 老牌媒体 (legacy) | 机构/智库 (specialist) |
 |---|---|---|---|
-| **EN** | Reuters×3、AP | BBC×3、Guardian×3、NYT×4、WSJ×3、WaPo×2、Economist | Politico EU、EURACTIV、The Hill、Brookings、CFR、PIIE、CSIS、Chatham House、UN News、EIA、IMF、Fed、ECB、**NPR Politics、Roll Call、ABC News** |
+| **EN** | Reuters×3、AP | BBC×3、Guardian×4、NYT×4、WSJ×3、WaPo×2、Economist | Politico EU、EURACTIV、The Hill、Brookings、CFR、PIIE、CSIS、Chatham House、UN News、EIA、IMF、Fed、ECB、**NPR Politics、Roll Call、ABC News、Inside Higher Ed、The PIE News、The Conversation、Hechinger Report、EdSurge**（教育/人才） |
 | **DE** | — | DW×2、Tagesschau、Spiegel×2、Zeit×3、FAZ×2、Handelsblatt×2、SZ×2 | — |
 | **FR** | — | Le Monde×3、Le Figaro×2、France 24×2、RFI、Les Échos、Le Point、franceinfo | — |
 | **ZH** | — | **中央社×4**（兩岸/國際/大陸/財經）、**自由時報×3**（政治/國際/財經） | — |
@@ -145,7 +157,7 @@ main.go (CLI: report / ui / read / find / sources / init)
 ## 测试
 
 ```bash
-make test    # 14 包离线单测（含 -race）：feed/分类/去重/排序/robots/流水线/TUI/gnews
+make test    # 17 包离线单测（含 -race）：feed/分类/去重/排序/robots/流水线/TUI/gnews/llm
 make smoke   # 真实联网冒烟
 ```
 
@@ -161,5 +173,5 @@ make smoke   # 真实联网冒烟
 - **网络受限**：读取 `HTTP_PROXY/HTTPS_PROXY` 环境变量，或 `--proxy http://127.0.0.1:7897`
 - **某来源总是失败**：`news-report sources --live` 实测；可在配置里给该源换 `feeds` 或 `enabled: false`
 - **想只看新增**：默认已按已读记录过滤；`--show-seen` 显示全部
-- **分类不准**：词表在 `internal/classify/classify.go`（四语），可自行增删关键词
+- **分类不准**：词表在 `internal/classify/classify.go`（四语五分类），可自行增删关键词
 - **中文显示乱码**：确认终端 UTF-8；台湾源标题为繁体

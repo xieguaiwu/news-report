@@ -16,7 +16,7 @@ import (
 const (
 	DefaultConfigPath = "~/.config/news-report/config.yaml"
 	DefaultCacheDir   = "~/.cache/news-report"
-	Version           = "0.4.0"
+	Version           = "0.5.1"
 )
 
 // SourceOverride 允许用户针对单个来源做覆盖（不需要删掉整个内置注册表）。
@@ -69,7 +69,7 @@ type LLMConfig struct {
 func Default() *Config {
 	return &Config{
 		Languages:   []string{"en", "de", "fr", "zh"},
-		Categories:  []string{"uspolitics", "politics", "economy", "industry"},
+		Categories:  []string{"uspolitics", "politics", "economy", "industry", "edu-policy"},
 		Minutes:     1440, // 24 小时
 		LimitPerCat: 12,
 		TotalLimit:  80,
@@ -187,9 +187,9 @@ func (c *Config) Validate() error {
 	}
 	for _, cat := range c.Categories {
 		switch cat {
-		case "uspolitics", "politics", "economy", "industry":
+		case "uspolitics", "politics", "economy", "industry", "edu-policy":
 		default:
-			return fmt.Errorf("不支持的分类 %q（仅支持 uspolitics/politics/economy/industry）", cat)
+			return fmt.Errorf("不支持的分类 %q（仅支持 uspolitics/politics/economy/industry/edu-policy）", cat)
 		}
 	}
 	if c.TimeoutSec <= 0 {
