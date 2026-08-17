@@ -1,1 +1,0 @@
-Everything is well-formed. All sections properly placed, no duplicates. Here's the acceptance report:

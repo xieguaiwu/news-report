@@ -1,3 +1,21 @@
+# Binary
+/news-report
 /bin/
-*.tmp
+
+# Pi subagent artifacts
+.pi-subagents/
+
+# Runtime data
+/data/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+*.swo
 .DS_Store
+*.tmp
+
+# Go
+*.test
+*.out
