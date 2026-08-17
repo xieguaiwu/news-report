@@ -31,10 +31,28 @@
 
 ## 安装
 
+### 方式一：源码构建
+
 ```bash
 cd ~/Desktop/go-projects/news-report
 make build          # 或 go build -o bin/news-report .
 make install        # 安装到 ~/.local/bin
+```
+
+### 方式二：GitHub Release
+
+从 [Releases](https://github.com/xieguaiwu/news-report/releases) 下载 `news-report-<version>-linux-amd64.tar.gz`：
+
+```bash
+tar xzf news-report-*-linux-amd64.tar.gz
+sudo install -Dm755 news-report /usr/local/bin/news-report
+```
+
+### 方式三：COPR（Fedora）
+
+```bash
+sudo dnf copr enable xieguaiwu/news-report
+sudo dnf install news-report
 ```
 
 ## 快速开始

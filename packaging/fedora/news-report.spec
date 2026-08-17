@@ -28,7 +28,7 @@ Features:
 %setup -q -n news-report-%{version}
 
 %build
-export GOFLAGS="-mod=mod"
+export GOFLAGS="-mod=vendor"
 export CGO_ENABLED=0
 export GOOS=linux
 export GOARCH=amd64
