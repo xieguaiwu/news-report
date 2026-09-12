@@ -19,3 +19,6 @@
 # Go
 *.test
 *.out
+
+# astock 运行产物
+/out/

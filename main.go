@@ -8,6 +8,7 @@
 //	news-report find "关键词"       搜索 Google News 找付费文章的免费转载/镜像
 //	news-report sources            列出消息源
 //	news-report sources --live     实测消息源可用性
+//	news-report astock             A股舆情：抓取东财个股新闻+巨潮公告并 LLM 打分
 //	news-report init               生成默认配置文件
 //	news-report version            版本信息
 package main
@@ -48,6 +49,8 @@ func main() {
 		runUI(os.Args[2:])
 	case "sources":
 		runSources(os.Args[2:])
+	case "astock":
+		runAstock(os.Args[2:])
 	case "init":
 		runInit(os.Args[2:])
 	case "cache":
@@ -70,6 +73,7 @@ func usage() {
   news-report read <url> [flags]    深度阅读：抓取网页并提取正文
   news-report find "关键词" [flags]  搜索免费转载/镜像（付费墙文章）
   news-report sources [--live]      列出消息源；--live 实测可用性
+  news-report astock [flags]        A股舆情：东财个股新闻+巨潮公告 → LLM 打分 → JSONL
   news-report cache [stat|clear]    查看缓存状态 / 清空缓存
   news-report init                  生成默认配置文件 (~/.config/news-report/config.yaml)
 
@@ -101,6 +105,15 @@ find flags:
   --lang en|de|fr|zh     搜索语言（默认 en）
   --limit N              结果上限（默认 10）
   --exclude DOMAIN       排除原站域名（标记原站）
+
+astock flags:
+  --sym CODE|简称        股票代码/简称，可重复或逗号分隔（默认 000001,000166,300059）
+  --fetch-only           只抓取不打分
+  --score-only           对已有 JSONL 未打分行补打分（配合 --in / --out）
+  --limit N              每源每 sym 条数上限（默认 10）
+  --out PATH             输出 JSONL（默认 out/astock_news_<date>.jsonl）
+  --in PATH              --score-only 输入文件（默认取 --out）
+  凭据：先 source scripts/astock_env.sh；bai 网关需代理（source /root/.pi/env）
 `)
 }
 

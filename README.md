@@ -4,6 +4,31 @@
 
 [English](README_EN.md)
 
+## A股舆情（astock）
+
+`astock` 子命令在欧美媒体聚合之外，提供 **A股个股舆情分析**：抓取个股新闻与公告 → LLM 打分 → JSONL 落盘。
+
+```bash
+# 凭据注入（bai 网关 glm-5.3-flash 免费通道；值不回显、不落盘）
+source scripts/astock_env.sh
+
+# 抓取 000001/000166/300059 的新间+公告并打分 → out/astock_news_<date>.jsonl
+./bin/news-report astock
+
+# 自选标的（可重复/逗号分隔，支持代码或简称）、每源条数、输出路径
+./bin/news-report astock --sym 000166,300059,平安银行 --limit 10 --out out/astock.jsonl
+
+# 只抓不打分 / 对已有 JSONL 补打分
+./bin/news-report astock --sym 000166 --fetch-only
+./bin/news-report astock --score-only --in out/astock.jsonl
+```
+
+- **数据源**：东方财富个股新闻（secid 分辨沪深，主列表 + stock_news_em 检索双端点去重合并）+ 巨潮资讯公告（hisAnnouncement，含 orgId 解析）；指数退避、4xx 不重试、失败优雅降级
+- **标的解析**：代码/简称 → sym（`sz000001` 形式，与 SHARK 对齐），全量列表缓存 `data/stock_list.csv`
+- **LLM 打分**：`tone(-2..2)` · `kind(业绩|监管|重组|传闻|研报|自媒体|其他)` · `specificity(0..1)` · `source_tier(官方|媒体|自媒体|不明)` · `black_score(0..1 低级黑判定)`；temperature=0 强制 JSON，并发≤4、单条 30s、重试≤3；无凭据自动降级 fetch-only（model=MISSING_KEY）
+- **JSONL 行**：`date,sym,source_type,title,text,url,tone,kind,specificity,source_tier,black_score,scored_at,model,prompt_version`
+- 凭据注入法、端点细节与限制见 [ASTOCK_NOTES.md](ASTOCK_NOTES.md)；测试：`go test ./internal/astock/...`（联网用例加 `-tags=net`）
+
 ## 特性
 
 - **广度 × 深度兼顾的来源矩阵（65+ 内置源）**
