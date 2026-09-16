@@ -151,6 +151,12 @@ func pairToItem(p dexPair) AttentionItem {
 // getWithRetry 带退避重试。429/5xx 重试（1s→3s→9s），其他 4xx 不重试。
 // 调用前过共享令牌桶（≤2 req/s）。
 func getWithRetry(ctx context.Context, c *http.Client, rawURL string) ([]byte, error) {
+	return getWithRetryHeaders(ctx, c, rawURL, nil)
+}
+
+// getWithRetryHeaders 同 getWithRetry，但允许附加请求头（会覆盖默认值）。
+// 某些源缺特定头会直接 403——实测微博网页接口不带 Referer 就是 403 Forbidden。
+func getWithRetryHeaders(ctx context.Context, c *http.Client, rawURL string, extra map[string]string) ([]byte, error) {
 	backoff := time.Second
 	var lastErr error
 	for attempt := 0; attempt < 4; attempt++ {
@@ -161,6 +167,9 @@ func getWithRetry(ctx context.Context, c *http.Client, rawURL string) ([]byte, e
 		}
 		req.Header.Set("User-Agent", userAgent)
 		req.Header.Set("Accept", "application/json")
+		for k, v := range extra {
+			req.Header.Set(k, v)
+		}
 		resp, err := c.Do(req)
 		if err != nil {
 			lastErr = err

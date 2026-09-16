@@ -52,8 +52,18 @@ func WeiboHotSearch(ctx context.Context, c *http.Client) ([]AttentionItem, error
 	return weiboHotSearchAt(ctx, c, weiboHotSearchURL)
 }
 
+// weiboHeaders 是微博网页接口必需的请求头。
+// 实测（2026-09-16）：只带 User-Agent（或不带）一律 403 {"error":"Forbidden"}；
+// 补上 Referer: https://weibo.com/ 后 200。这是该源的硬性要求，不是可选优化。
+var weiboHeaders = map[string]string{
+	"User-Agent":      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+	"Referer":         "https://weibo.com/",
+	"Accept":          "application/json, text/plain, */*",
+	"Accept-Language": "zh-CN,zh;q=0.9",
+}
+
 func weiboHotSearchAt(ctx context.Context, c *http.Client, rawURL string) ([]AttentionItem, error) {
-	body, err := getWithRetry(ctx, c, rawURL)
+	body, err := getWithRetryHeaders(ctx, c, rawURL, weiboHeaders)
 	if err != nil {
 		return nil, err
 	}

@@ -76,9 +76,14 @@ func runCrypto(args []string) int {
 	client := &http.Client{Timeout: cryptoHTTPTimeout}
 
 	items, err := cryptoCollect(ctx, client, *chain, syms, *query, *attentionOnly, *limit)
+	// 部分源失败时**保留已抓到的数据**并告警。整体返回错误会白白丢掉成功的那部分
+	// ——注意力腿尤其如此：微博成功、Telegram 缺凭据是常态。
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "crypto: 采集失败: %v\n", err)
-		return 1
+		if len(items) == 0 {
+			fmt.Fprintf(os.Stderr, "crypto: 采集失败: %v\n", err)
+			return 1
+		}
+		fmt.Fprintf(os.Stderr, "crypto: 部分源失败（保留 %d 条）: %v\n", len(items), err)
 	}
 
 	scorer := crypto.NewScorer(crypto.ScorerConfigFromEnv())

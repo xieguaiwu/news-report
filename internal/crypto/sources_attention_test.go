@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -65,5 +66,24 @@ func TestTelegramNeverLeaksTokenIntoItem(t *testing.T) {
 	}
 	if items[0].ObservedAt != 1786808311 {
 		t.Fatalf("observed_at: %d", items[0].ObservedAt)
+	}
+}
+
+func TestWeiboRequestCarriesReferer(t *testing.T) {
+	var gotReferer, gotUA string
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotReferer = r.Header.Get("Referer")
+		gotUA = r.Header.Get("User-Agent")
+		_, _ = w.Write([]byte(`{"ok":1,"data":{"realtime":[]}}`))
+	}))
+	defer ts.Close()
+	if _, err := weiboHotSearchAt(context.Background(), ts.Client(), ts.URL); err != nil {
+		t.Fatalf("weibo: %v", err)
+	}
+	if gotReferer != "https://weibo.com/" {
+		t.Fatalf("微博接口缺 Referer 会 403，实际=%q", gotReferer)
+	}
+	if !strings.Contains(gotUA, "Mozilla") {
+		t.Fatalf("微博需要浏览器型 UA，实际=%q", gotUA)
 	}
 }

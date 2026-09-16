@@ -6,7 +6,7 @@ DAY="$(date -u +%Y%m%d)"
 OUT="out/crypto_${DAY}.jsonl"
 
 # 轮 1：行情 + 安全（对 watchlist 内代币）
-while read -r addr; do
+while read -r addr _rest; do
   [[ -z "$addr" || "$addr" == \#* ]] && continue
   ./bin/news-report crypto --chain bsc --sym "$addr" --out "$OUT" || echo "warn: $addr failed" >&2
 done < config/crypto_watchlist.txt
@@ -14,4 +14,8 @@ done < config/crypto_watchlist.txt
 # 轮 2：注意力源（微博，过滤后入库）
 ./bin/news-report crypto --attention-only --out "$OUT" || echo "warn: attention failed" >&2
 
-echo "crypto_daily: wrote $(wc -l < "$OUT") rows to $OUT"
+if [ -f "$OUT" ]; then
+  echo "crypto_daily: wrote $(wc -l < "$OUT") rows to $OUT"
+else
+  echo "crypto_daily: no rows collected (output not created)"
+fi
