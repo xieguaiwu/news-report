@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
+
+# 与 scripts/crypto_env.sh 同款：凭据库路径可覆盖，默认 $HOME。
+# 原实现硬编码 /root/.pi/agent/...（cpu1 部署形态）——非 root 环境一律 Permission denied。
+MODELS_JSON="${MODELS_JSON:-$HOME/.pi/agent/models.json}"
+AUTH_JSON="${AUTH_JSON:-$HOME/.pi/agent/auth.json}"
+export MODELS_JSON AUTH_JSON
 # astock_env.sh — A股舆情打分通道凭据注入（source 本文件使用，勿直接执行）
 #
 #   source scripts/astock_env.sh
 #
 # 解析逻辑（值一律不 echo、不落盘、不提交）：
-#   1. 读 /root/.pi/agent/models.json 的 providers.bai 条目：baseUrl + apiKey；
+#   1. 读 ${MODELS_JSON} 的 providers.bai 条目：baseUrl + apiKey；
 #   2. apiKey 为 "$VAR" 环境变量引用时，从当前环境解析该变量；
-#   3. 环境缺失时回退 /root/.pi/agent/auth.json 的 bai.key（同为 pi 凭据库）；
+#   3. 环境缺失时回退 ${AUTH_JSON} 的 bai.key（同为 pi 凭据库）；
 #   4. export ASTOCK_LLM_BASE_URL / ASTOCK_LLM_API_KEY / ASTOCK_LLM_MODEL。
 #
 # 代理要求：bai 网关直连被封锁；Go net/http 经 http.ProxyFromEnvironment 自动使用
@@ -26,8 +32,13 @@ def load(path):
     with open(path) as f:
         return json.load(f)
 
+MODELS_JSON = os.environ.get('MODELS_JSON') or os.path.join(
+    os.path.expanduser('~'), '.pi', 'agent', 'models.json')
+AUTH_JSON = os.environ.get('AUTH_JSON') or os.path.join(
+    os.path.expanduser('~'), '.pi', 'agent', 'auth.json')
+
 try:
-    bai = load('/root/.pi/agent/models.json')['providers']['bai']
+    bai = load(MODELS_JSON)['providers']['bai']
 except Exception as e:
     print('ERR', '读取 models.json 失败: %s' % e); sys.exit(0)
 
@@ -42,7 +53,7 @@ if key.startswith('$'):
         key, src = env, 'models.json->$' + name
     else:
         try:
-            key, src = load('/root/.pi/agent/auth.json')['bai']['key'], 'auth.json(bai.key)'
+            key, src = load(AUTH_JSON)['bai']['key'], 'auth.json(bai.key)'
         except Exception as e:
             print('ERR', 'env %s 未设置且 auth.json 回退失败: %s' % (name, e)); sys.exit(0)
 

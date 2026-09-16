@@ -20,9 +20,16 @@ import (
 // PromptVersion 打分提示词版本号（prompt 文本有变必须更新此常量，便于 JSONL 追溯）。
 const PromptVersion = "astock-llmscore-v1"
 
-// DefaultModel 默认打分模型：bai 网关 glm-5.3-flash（免费通道）。
-// 备用通道 dashscope/qwen（token-plan compatible-mode）仅注释说明，见 ASTOCK_NOTES.md。
-const DefaultModel = "glm-5.3-flash"
+// DefaultModel 默认打分模型：qwen3.8-flash。
+//
+// ⚠️ 2026-09-16 变更：原默认 `glm-5.3-flash` 的限时免费期已于 2026-09-12 结束
+// （见 ~/.pi/agent/models.json 的 providers.bai._free_status_note：「当前唯一确认
+// 0-Credits 通道 = qwen3.8-flash」）。继续把它当默认值会走付费通道。
+//
+// 本机实测（2026-09-16，同一批 9 条）：两模型均 9/9 成功；
+// glm-5.3-flash ≈0.6s/条，qwen3.8-flash ≈3s/条（更慢但免费）。
+// 需临时切回：ASTOCK_LLM_MODEL=glm-5.3-flash source scripts/astock_env.sh
+const DefaultModel = "qwen3.8-flash"
 
 // 凭据环境变量（由 scripts/astock_env.sh 从 /root/.pi/agent/models.json 的 bai 条目
 // 解析导出；值不 echo、不落盘、不提交）。

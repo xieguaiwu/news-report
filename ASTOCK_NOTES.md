@@ -52,7 +52,10 @@ source scripts/astock_env.sh   # export ASTOCK_LLM_BASE_URL / ASTOCK_LLM_API_KEY
 1. 读 `/root/.pi/agent/models.json` 的 `providers.bai` 条目 → `baseUrl` + `apiKey`；
 2. `apiKey` 是 `$BAI_API_KEY` 形式的**环境变量引用**（models.json 中非字面 key）→ 从环境解析；
 3. 环境缺失 → 回退 `/root/.pi/agent/auth.json` 的 `bai.key`（同为 pi 凭据库，实测本机 bash 环境走此分支）；
-4. 模型默认 `glm-5.3-flash`（bai 免费档），可用 `ASTOCK_LLM_MODEL` 覆盖。
+4. 模型默认 **`qwen3.8-flash`**（bai 唯一确认的 0-Credits 通道），可用 `ASTOCK_LLM_MODEL` 覆盖。
+   ⚠️ 2026-09-16 变更：原默认 `glm-5.3-flash` 的限时免费期已于 **2026-09-12 结束**（见
+   `~/.pi/agent/models.json` 的 `providers.bai._free_status_note`）。本机实测同批 9 条：
+   qwen 9/9 ≈3s/条；glm 9/9 ≈0.6s/条（更快但计费）。
 
 红线：key 值禁止 echo/落盘/提交；脚本自身 `chmod 600`；程序内仅从上述两个环境变量读凭据。
 
@@ -67,7 +70,7 @@ source scripts/astock_env.sh   # export ASTOCK_LLM_BASE_URL / ASTOCK_LLM_API_KEY
   - `tone`: 整数 -2..2（极空..极多）；`kind`: 业绩|监管|重组|传闻|研报|自媒体|其他
   - `specificity`: 0..1 信息具体程度；`source_tier`: 官方|媒体|自媒体|不明
   - `black_score`: 0..1 **低级黑判定**（论据缺失+情绪化渲染+恐慌/亢奋诱导，越满足越高）
-- **glm-5.3-flash 始终思考**：`thinking.type` 参数被网关拒（400001「不支持关闭思考」），必须 `reasoning_effort=low`（实测 3s/条、reasoning_tokens=0）；`max_tokens` 需 ≥800（否则思考耗尽预算致 content 为空、finish=length）
+- **思考型模型需注意 max_tokens**：`glm-5.3-flash` 参数被网关拒（400001「不支持关闭思考」），必须 `reasoning_effort=low`（实测 3s/条、reasoning_tokens=0）；`max_tokens` 需 ≥800（否则思考耗尽预算致 content 为空、finish=length）。qwen3.8-flash 同走该降级链。原始记录（glm）：`thinking.type` 参数被网关拒（400001「不支持关闭思考」），必须 `reasoning_effort=low`（实测 3s/条、reasoning_tokens=0）；`max_tokens` 需 ≥800（否则思考耗尽预算致 content 为空、finish=length）
 - 兼容降级链（400 时逐级去字段重试）：`reasoning_effort` → `response_format`
 - 解析兼容：markdown 围栏、前后杂文本、**模型把字段包进一层嵌套对象**（如 `{"answer":{...}}`，实测出现过）；越界值夹紧、非法枚举回退默认
 - 限速：bai 免费档有速率限制，实测 53 条并发 4 出现数次 429/5xx，由重试（退避 1s→3s）吸收，最终 0 失败
