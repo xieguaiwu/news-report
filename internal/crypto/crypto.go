@@ -19,6 +19,12 @@ import (
 
 const SchemaVersion = "crypto-attention-v1"
 
+// userAgent 是 crypto 包的共享出网 User-Agent（GeckoTerminal 无 UA 会被 Cloudflare 拦）。
+const userAgent = "news-report-crypto/1.0 (+https://github.com/xieguaiwu/news-report)"
+
+// maxBodyBytes 是 HTTP 响应体读取上限（防内存炸裂）。
+const maxBodyBytes = 8 << 20
+
 // 支持的链标识。ChainNone 仅适用于 Kind==KindAttention。
 const (
 	ChainBSC    = "bsc"
