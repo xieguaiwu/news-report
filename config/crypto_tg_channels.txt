@@ -1,0 +1,13 @@
+# Telegram 公开频道监控列表（每行一个频道名，# 开头为注释）
+#
+# 这些频道通过 https://t.me/s/<channel> 的**公开网页预览**抓取——
+# 不需要 bot、不需要账号、不需要 API key。
+#
+# 前提：频道必须是**公开**频道（私有群只能用 Bot API，见 CRYPTO_TG_BOT_TOKEN）。
+# 校验：`curl -s -o /dev/null -w '%{http_code}' https://t.me/s/<channel>` 应为 200。
+#
+# 下面两个是公开的、非喊单类的加密信息频道，作为默认起点。
+# 请按自己的监控目标增删——本文件不内置任何喊单/拉盘频道。
+
+binance_announcements   # 币安公告（CEX 上线事件的权威来源，对应计划 §3.3）
+whale_alert_io          # 大额转账告警（筹码移动的公开观测）

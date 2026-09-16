@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"news-report/internal/crypto"
@@ -158,14 +159,36 @@ func cryptoCollect(
 	var out []crypto.AttentionItem
 
 	if attentionOnly {
+		// ── 源 1：微博热搜（无需凭据）──
 		if items, err := crypto.WeiboHotSearch(ctx, client); err != nil {
-			return nil, fmt.Errorf("weibo: %w", err)
+			fmt.Fprintf(os.Stderr, "crypto: 微博失败: %v\n", err)
 		} else {
 			out = append(out, crypto.FilterCryptoKeywords(items)...)
 		}
+
+		// ── 源 2：Telegram 公开频道网页预览（**无需 bot / 账号 / key**）──
+		channels := loadTgChannels()
+		var tgFailures int
+		for _, ch := range channels {
+			items, _, err := crypto.TelegramWebChannelBefore(ctx, client, ch, 0)
+			if err != nil {
+				tgFailures++
+				fmt.Fprintf(os.Stderr, "crypto: telegram_web %s: %v\n", ch, err)
+				continue
+			}
+			out = append(out, crypto.FilterCryptoKeywords(items)...)
+		}
+
+		// ── 源 3：Bot API（可选，仅私有群需要）──
 		token := os.Getenv("CRYPTO_TG_BOT_TOKEN")
 		if token == "" {
-			return out, fmt.Errorf("Telegram 凭据缺失（CRYPTO_TG_BOT_TOKEN）：注意力腿实际只跑了微博")
+			if len(channels) == 0 {
+				return out, fmt.Errorf("注意力腿无可用源：未配置公开频道且无 Bot token")
+			}
+			if tgFailures == len(channels) {
+				return out, fmt.Errorf("注意力腿 %d 个公开频道全部失败", len(channels))
+			}
+			return out, nil
 		}
 		// offset 必须持久化：否则每轮都从 0 起拉最近 24h，同一批消息被重复追加，
 		// 「提及量」会被轮次频率放大（计划 §9 P0-6）。
@@ -280,4 +303,25 @@ func cryptoScoreOnly(path string) int {
 		return 1
 	}
 	return 0
+}
+
+// loadTgChannels 读 config/crypto_tg_channels.txt（每行一个公开频道名，
+// `#` 开头为注释）。文件不存在返回空表——Telegram 腿据此跳过。
+func loadTgChannels() []string {
+	const path = "config/crypto_tg_channels.txt"
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	var out []string
+	for _, line := range strings.Split(string(b), "\n") {
+		if i := strings.IndexByte(line, '#'); i >= 0 {
+			line = line[:i]
+		}
+		line = strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(line), "@"))
+		if line != "" {
+			out = append(out, line)
+		}
+	}
+	return out
 }
