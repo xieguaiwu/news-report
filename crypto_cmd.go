@@ -14,6 +14,9 @@ import (
 
 const cryptoHTTPTimeout = 25 * time.Second
 
+// cryptoStateDir 存放增量采集游标（Telegram offset）。已加入 .gitignore。
+const cryptoStateDir = "state"
+
 func cryptoUsage(w io.Writer) {
 	fmt.Fprint(w, `用法: news-report crypto [选项]
 
@@ -159,10 +162,23 @@ func cryptoCollect(
 		if token == "" {
 			return out, fmt.Errorf("Telegram 凭据缺失（CRYPTO_TG_BOT_TOKEN）：注意力腿实际只跑了微博")
 		}
-		if items, _, err := crypto.TelegramUpdates(ctx, client, token, 0); err != nil {
+		// offset 必须持久化：否则每轮都从 0 起拉最近 24h，同一批消息被重复追加，
+		// 「提及量」会被轮次频率放大（计划 §9 P0-6）。
+		offsetPath := cryptoStateDir + "/tg_offset.json"
+		offset, err := crypto.LoadTgOffset(offsetPath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "crypto: 读取 tg offset 失败（按 0 继续）: %v\n", err)
+			offset = 0
+		}
+		items, next, err := crypto.TelegramUpdates(ctx, client, token, offset)
+		if err != nil {
 			return out, fmt.Errorf("telegram: %w", err)
-		} else {
-			out = append(out, crypto.FilterCryptoKeywords(items)...)
+		}
+		out = append(out, crypto.FilterCryptoKeywords(items)...)
+		if next != offset {
+			if err := crypto.SaveTgOffset(offsetPath, next); err != nil {
+				fmt.Fprintf(os.Stderr, "crypto: 保存 tg offset 失败: %v\n", err)
+			}
 		}
 		return out, nil
 	}
@@ -209,8 +225,54 @@ func capItems(items []crypto.AttentionItem, limit int) []crypto.AttentionItem {
 	return items
 }
 
-// cryptoScoreOnly 对已有 JSONL 补打分。T2 完成后再接线：读 JSONL → 逐行重打分。
+// cryptoScoreOnly 对已有 JSONL 补打分。用原子替换写回，不用 AppendJSONL——
+// 否则同一批会被追加两遍。
 func cryptoScoreOnly(path string) int {
-	fmt.Fprintf(os.Stderr, "crypto: --score-only 待接线（依赖 JSONL 读取器，见跨腿契约任务）: %s\n", path)
-	return 1
+	scorer := crypto.NewScorer(crypto.ScorerConfigFromEnv())
+	if !scorer.Available() {
+		fmt.Fprintln(os.Stderr, "crypto: 未配置 LLM 凭据（CRYPTO_LLM_API_KEY）")
+		return 1
+	}
+	rows, err := crypto.ReadJSONL(path)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "crypto: 读取失败: %v\n", err)
+		return 1
+	}
+	if len(rows) == 0 {
+		fmt.Fprintf(os.Stderr, "crypto: %s 无数据\n", path)
+		return 1
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+	defer cancel()
+	now := time.Now().UTC().Format(time.RFC3339)
+	ok, failed := 0, 0
+	for i := range rows {
+		sc, err := scorer.ScoreOne(ctx, crypto.RowToItem(rows[i]))
+		if err != nil {
+			failed++
+			fmt.Fprintf(os.Stderr, "crypto: 第 %d 行打分失败: %v\n", i+1, err)
+			continue
+		}
+		tone, shill, spec, black := sc.Tone, sc.ShillScore, sc.Specificity, sc.BlackScore
+		rows[i].Tone = &tone
+		rows[i].ShillScore = &shill
+		rows[i].Specificity = &spec
+		rows[i].BlackScore = &black
+		rows[i].Narrative = sc.Narrative
+		rows[i].SourceTier = sc.SourceTier
+		rows[i].ScoredAt = now
+		rows[i].Model = crypto.DefaultModel
+		rows[i].PromptVersion = crypto.PromptVersion
+		ok++
+	}
+	if err := crypto.WriteJSONLAtomic(path, rows); err != nil {
+		fmt.Fprintf(os.Stderr, "crypto: 写回失败: %v\n", err)
+		return 1
+	}
+	fmt.Printf("crypto: 补打分 %d 成功 / %d 失败 → %s\n", ok, failed, path)
+	if ok == 0 {
+		return 1
+	}
+	return 0
 }

@@ -22,3 +22,6 @@
 
 # astock 运行产物
 /out/
+
+# crypto 采集游标（Telegram offset 等）
+/state/
