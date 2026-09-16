@@ -16,7 +16,7 @@ export MODELS_JSON AUTH_JSON
 #   4. export ASTOCK_LLM_BASE_URL / ASTOCK_LLM_API_KEY / ASTOCK_LLM_MODEL。
 #
 # 代理要求：bai 网关直连被封锁；Go net/http 经 http.ProxyFromEnvironment 自动使用
-# HTTPS_PROXY —— 本脚本在 HTTPS_PROXY 未设置时自动 source /root/.pi/env。
+# HTTPS_PROXY —— 未设置时自动 source $PI_ENV（默认 ~/.pi/env）。
 #
 # 备用通道（未启用，仅注释）：dashscope/qwen token-plan compatible-mode
 # （models.json providers.qwen：baseUrl https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1，
@@ -74,12 +74,14 @@ ASTOCK_LLM_BASE_URL="$(printf '%s' "$_parsed" | cut -d' ' -f2)"
 ASTOCK_LLM_API_KEY="$(printf '%s' "$_parsed" | cut -d' ' -f3)"
 _src="$(printf '%s' "$_parsed" | cut -d' ' -f4)"
 export ASTOCK_LLM_BASE_URL ASTOCK_LLM_API_KEY
-export ASTOCK_LLM_MODEL="${ASTOCK_LLM_MODEL:-glm-5.3-flash}"
+# 默认 qwen3.8-flash（唯一确认 0-Credits）；glm-5.3-flash 自 2026-09-12 转付费。
+export ASTOCK_LLM_MODEL="${ASTOCK_LLM_MODEL:-qwen3.8-flash}"
 unset _parsed
 
 # 代理：bai 网关需 HTTPS_PROXY
-if [ -z "${HTTPS_PROXY:-}" ] && [ -f /root/.pi/env ]; then
-    . /root/.pi/env
+PI_ENV="${PI_ENV:-$HOME/.pi/env}"
+if [ -z "${HTTPS_PROXY:-}" ] && [ -f "$PI_ENV" ]; then
+    . "$PI_ENV"
 fi
 
 echo "astock_env: ✓ ASTOCK_LLM_BASE_URL / ASTOCK_LLM_API_KEY 已导出（bai/${ASTOCK_LLM_MODEL}, 来源 ${_src}, key 不回显）"
