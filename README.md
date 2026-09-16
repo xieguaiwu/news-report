@@ -29,6 +29,42 @@ source scripts/astock_env.sh
 - **JSONL 行**：`date,sym,source_type,title,text,url,tone,kind,specificity,source_tier,black_score,scored_at,model,prompt_version`
 - 凭据注入法、端点细节与限制见 [ASTOCK_NOTES.md](ASTOCK_NOTES.md)；测试：`go test ./internal/astock/...`（联网用例加 `-tags=net`）
 
+## 加密 meme 币（crypto）
+
+`crypto` 子命令对 BSC / Solana 的 meme 币做**公开数据观测**：行情快照 + 代币安全检测 + 注意力源采集，LLM 结构化打分后落 JSONL。
+
+> ### ⚠️ 合规声明
+>
+> 本子命令**只做公开数据观测与取证，不含任何交易执行**（无私钥、无签名、无下单路径）。
+> 虚拟货币相关业务活动在中国大陆属**非法金融活动**（银发〔2026〕42号）；本文档与代码**不构成投资建议**，也不提供任何参与路径。
+>
+> 下游注意事项：`Memekrieg`（链上取证腿，私有仓）为同一体系；`rpc.py` 对 `eth_send*` / `eth_sign*` / `personal_*` / `wallet_*` 在**运行时**硬拒，不只靠文档约定。
+
+```bash
+# 凭据注入（值不回显、不落盘）
+source scripts/crypto_env.sh
+
+# 按关键词搜交易对 + 安全检测 → out/crypto_<UTC 日期>.jsonl
+./bin/news-report crypto --chain bsc --query NIULAI --limit 5
+
+# 对 watchlist 里的代币逐个快照
+./bin/news-report crypto --chain bsc --sym 0x3604B5c377124d2180C4fB791953fc8431a90111
+
+# 只跑注意力源（微博；Telegram 需 CRYPTO_TG_BOT_TOKEN）
+./bin/news-report crypto --attention-only
+
+# 对已有 JSONL 补打分（原子替换写回，幂等）
+./bin/news-report crypto --score-only --in out/crypto_20260916.jsonl
+```
+
+| 项 | 内容 |
+|:--|:--|
+| 数据源 | DexScreener（行情）、GoPlus + Honeypot.is（安全）、微博热搜 + Telegram（注意力） |
+| LLM 打分 | `tone` / `narrative` / `shill_score` / `specificity` / `source_tier` / `black_score`；默认模型 **`qwen3.8-flash`**（唯一确认 0-Credits 通道） |
+| 输出 schema | `crypto-attention-v1`；字段清单冻结于 `Memekrieg/docs/CONTRACT_attention_jsonl.md` |
+| 已知限制 | 微博热搜与 BSC meme 叙事基本不重叠（实测 52 条命中 0）；公共 RPC 分页扫描会触发限流 |
+| 测试 | `go test ./internal/crypto/...`（联网用例加 `-tags=net`） |
+
 ## 特性
 
 - **广度 × 深度兼顾的来源矩阵（65+ 内置源）**
