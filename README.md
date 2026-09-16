@@ -50,7 +50,7 @@ source scripts/crypto_env.sh
 # 对 watchlist 里的代币逐个快照
 ./bin/news-report crypto --chain bsc --sym 0x3604B5c377124d2180C4fB791953fc8431a90111
 
-# 只跑注意力源（微博；Telegram 需 CRYPTO_TG_BOT_TOKEN）
+# 只跑注意力源（微博 + Telegram 公开频道；频道白名单见 config/crypto_tg_channels.txt）
 ./bin/news-report crypto --attention-only
 
 # 对已有 JSONL 补打分（原子替换写回，幂等）
@@ -59,11 +59,13 @@ source scripts/crypto_env.sh
 
 | 项 | 内容 |
 |:--|:--|
-| 数据源 | DexScreener（行情）、GoPlus + Honeypot.is（安全）、微博热搜 + Telegram（注意力） |
+| 数据源 | DexScreener（行情）、GoPlus + Honeypot.is（安全）、微博热搜 + **Telegram 公开频道网页预览**（注意力，**零凭据**） |
 | LLM 打分 | `tone` / `narrative` / `shill_score` / `specificity` / `source_tier` / `black_score`；默认模型 **`qwen3.8-flash`**（唯一确认 0-Credits 通道） |
 | 输出 schema | `crypto-attention-v1`；字段清单冻结于 `Memekrieg/docs/CONTRACT_attention_jsonl.md` |
 | 已知限制 | 微博热搜与 BSC meme 叙事基本不重叠（实测 52 条命中 0）；公共 RPC 分页扫描会触发限流 |
+| 凭据 | **行情/安全/微博/Telegram 公开频道全部零凭据**。只有 LLM 打分需要一个免费通道的 key；Telegram Bot API 仅在需要读**私有**群时才要 token（走 `rbw`） |
 | 测试 | `go test ./internal/crypto/...`（联网用例加 `-tags=net`） |
+| 实现细节 | 端点/字段/限速/踩坑库见 [CRYPTO_NOTES.md](CRYPTO_NOTES.md) |
 
 ## 特性
 
