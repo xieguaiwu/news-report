@@ -51,6 +51,8 @@ func main() {
 		runSources(os.Args[2:])
 	case "astock":
 		runAstock(os.Args[2:])
+	case "crypto":
+		runCrypto(os.Args[2:])
 	case "init":
 		runInit(os.Args[2:])
 	case "cache":

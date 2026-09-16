@@ -58,12 +58,12 @@ type AttentionItem struct {
 
 // Score 是 LLM 打分结果。字段语义对齐 astock，新增 Narrative 与 ShillScore。
 type Score struct {
-	Tone        int     `json:"tone"`         // -2..2
-	Narrative   string  `json:"narrative"`    // 叙事标签，如 "牛市来了" / "动物币"
-	ShillScore  float64 `json:"shill_score"`  // 0..1 喊单/蛊惑强度
-	Specificity float64 `json:"specificity"`  // 0..1 信息具体程度
-	SourceTier  string  `json:"source_tier"`  // 官方|媒体|自媒体|不明
-	BlackScore  float64 `json:"black_score"`  // 0..1 低级黑
+	Tone        int     `json:"tone"`        // -2..2
+	Narrative   string  `json:"narrative"`   // 叙事标签，如 "牛市来了" / "动物币"
+	ShillScore  float64 `json:"shill_score"` // 0..1 喊单/蛊惑强度
+	Specificity float64 `json:"specificity"` // 0..1 信息具体程度
+	SourceTier  string  `json:"source_tier"` // 官方|媒体|自媒体|不明
+	BlackScore  float64 `json:"black_score"` // 0..1 低级黑
 }
 
 // Row 是 JSONL 输出的一行。未打分行 Tone/ShillScore/Specificity/BlackScore 为 null。
